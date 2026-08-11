@@ -1,0 +1,179 @@
+"""변환 결과 검증.
+
+stdlib unittest만 쓴다(pytest를 새 의존성으로 들이지 않기 위해).
+
+    .venv/bin/python -m unittest discover -s tests -v
+"""
+
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from converter import convert  # noqa: E402
+
+BASE = "https://blog.devprofessional.xyz"
+
+
+class InlineStyleTest(unittest.TestCase):
+    """Blogger에는 CSS를 넣을 데가 없다 — 스타일이 전부 인라인이어야 한다."""
+
+    def test_heading_carries_blog_accent_bar(self):
+        html = convert("## 소제목").html
+        self.assertIn("border-left:3px solid #00215D", html)
+        self.assertIn("color:#0D1220", html)
+
+    def test_paragraph_and_link_styled(self):
+        html = convert("본문 [링크](https://example.com) 입니다.").html
+        self.assertIn('<p style="', html)
+        self.assertIn("color:#00215D;text-decoration:underline", html)
+
+    def test_table_and_blockquote_styled(self):
+        html = convert("| a | b |\n|---|---|\n| 1 | 2 |\n\n> 인용").html
+        self.assertIn("border-collapse:collapse", html)
+        self.assertIn("border-left:3px solid #00215D", html)
+
+    def test_inline_code_styled_but_block_code_untouched(self):
+        html = convert("`인라인` 과\n\n```\nblock\n```").html
+        # 인라인 code에는 배지 스타일이, 코드블록 안 code에는 pre용 스타일이 붙는다
+        self.assertIn("background:#E9ECF4", html)
+        self.assertIn("background:none;color:inherit", html)
+
+
+class LinebreakSafetyTest(unittest.TestCase):
+    """Blogger의 '엔터 = 줄바꿈' 설정이 켜져 있어도 결과가 같아야 한다."""
+
+    SAMPLE = "# 제목\n\n문단1\n\n- 항목1\n- 항목2\n\n```python\na = 1\nb = 2\n```\n\n| a |\n|---|\n| 1 |\n"
+
+    def test_no_newline_survives(self):
+        result = convert(self.SAMPLE)
+        self.assertEqual(result.html.count("\n"), 0)
+        self.assertEqual(result.stats["newlines"], 0)
+
+    def test_code_lines_become_br(self):
+        html = convert("```python\na = 1\nb = 2\n```").html
+        self.assertIn("<br>", html)
+
+    def test_opt_out_keeps_code_newlines(self):
+        html = convert("```python\na = 1\nb = 2\n```", safe_linebreaks=False).html
+        self.assertIn("\n", html)
+        self.assertNotIn("<br>", html)
+
+
+class CodeBlockTest(unittest.TestCase):
+    def test_known_language_is_highlighted_inline(self):
+        result = convert("```python\ndef f():\n    return 1\n```")
+        self.assertIn("<span style=\"color:", result.html.replace("; ", ";"))
+        self.assertEqual(result.stats["code_blocks"], 1)
+        self.assertEqual(result.warnings, [])
+
+    def test_unknown_language_warns_but_keeps_code(self):
+        result = convert("```wubbalubba\nhello world\n```")
+        self.assertIn("hello world", result.html)
+        self.assertTrue(any("wubbalubba" in w for w in result.warnings))
+
+    def test_html_special_chars_stay_escaped(self):
+        # 이스케이프가 풀리면 Blogger 에디터가 태그로 해석해 글이 깨진다.
+        result = convert("```html\n<div class=\"x\">a & b</div>\n```")
+        self.assertIn("&lt;", result.html)
+        self.assertIn("&amp;", result.html)
+        self.assertNotIn('<div class="x">', result.html)
+
+    def test_round_trip_of_escaped_entity(self):
+        # 원문에 `&lt;` 라고 쓴 경우 — 그대로 보여야 한다.
+        result = convert("```\n&lt;\n```")
+        self.assertIn("&amp;lt;", result.html)
+
+    def test_double_quotes_are_not_left_as_entities(self):
+        # Python-Markdown은 "를 &quot;로 바꾼다. 되돌리지 않으면 코드에
+        # `&quot;`가 글자 그대로 찍힌다(실제 문서에서 발견된 버그).
+        result = convert('```python\nheaders = {"a": "b"}\n```')
+        self.assertNotIn("&amp;quot;", result.html)
+        self.assertIn("&quot;a&quot;", result.html)
+
+
+class MermaidTest(unittest.TestCase):
+    def test_becomes_mermaid_div_not_code_block(self):
+        result = convert("```mermaid\ngraph TD\n  A-->B\n```")
+        self.assertIn('<div class="mermaid"', result.html)
+        self.assertNotIn("<pre", result.html)
+        self.assertEqual(result.stats["mermaid"], 1)
+        self.assertEqual(result.stats["code_blocks"], 0)
+
+    def test_source_is_escaped_and_paragraph_wrapper_removed(self):
+        html = convert("```mermaid\ngraph TD\n  A-->B & C\n```").html
+        self.assertIn("A--&gt;B &amp; C", html)
+        self.assertNotIn("<p>", html)
+
+    def test_note_mentions_theme_snippet(self):
+        result = convert("```mermaid\ngraph TD\n  A-->B\n```")
+        self.assertTrue(any("Mermaid" in n for n in result.notes))
+
+    def test_line_breaks_survive_as_entities(self):
+        # 줄바꿈이 공백으로 접히면 Mermaid가 'Syntax error in text'를 낸다.
+        # 개행 문자를 남길 수도 없어서(Blogger가 <br>로 바꾼다) `&#10;`을 쓴다.
+        html = convert("```mermaid\ngraph TD\n  A-->B\n  B-->C\n```").html
+        self.assertEqual(html.count("&#10;"), 2)
+        self.assertEqual(html.count("\n"), 0)
+        self.assertNotIn("<br>", html)
+
+
+class MathTest(unittest.TestCase):
+    def test_arithmatex_class_survives_inlining(self):
+        result = convert("인라인 $a_1 + b_2$ 수식")
+        self.assertIn('class="arithmatex"', result.html)
+        self.assertTrue(result.stats["has_math"])
+        self.assertTrue(any("KaTeX" in n for n in result.notes))
+
+    def test_subscript_not_turned_into_italics(self):
+        # arithmatex가 없으면 _가 <em>으로 해석돼 수식이 깨진다(블로그 주석 참고).
+        html = convert("$a_1 + b_2$").html
+        self.assertNotIn("<em>", html)
+
+
+class AssetUrlTest(unittest.TestCase):
+    def test_relative_image_absolutized(self):
+        html = convert("![x](/media/a.png)", image_base_url=BASE).html
+        self.assertIn(f'src="{BASE}/media/a.png"', html)
+
+    def test_relative_link_absolutized(self):
+        html = convert("[글](/posts/hello)", image_base_url=BASE).html
+        self.assertIn(f'href="{BASE}/posts/hello"', html)
+
+    def test_absolute_and_anchor_untouched(self):
+        html = convert(
+            "![x](https://cdn.example.com/a.png) [앵커](#section)", image_base_url=BASE
+        ).html
+        self.assertIn('src="https://cdn.example.com/a.png"', html)
+        self.assertIn('href="#section"', html)
+
+    def test_warns_when_base_missing(self):
+        result = convert("![x](/media/a.png)")
+        self.assertTrue(any("상대경로" in w for w in result.warnings))
+
+    def test_no_warning_when_nothing_relative(self):
+        result = convert("![x](https://cdn.example.com/a.png)")
+        self.assertEqual(result.warnings, [])
+
+
+class WrapperTest(unittest.TestCase):
+    def test_wrapper_sets_blog_typography(self):
+        html = convert("본문").html
+        self.assertTrue(html.startswith('<div style="font-family:'))
+        self.assertIn("font-size:18px;line-height:1.85", html)
+
+    def test_can_opt_out(self):
+        html = convert("본문", wrap=False).html
+        self.assertTrue(html.startswith("<p"))
+
+
+class EmptyInputTest(unittest.TestCase):
+    def test_empty_is_not_an_error(self):
+        result = convert("")
+        self.assertEqual(result.warnings, [])
+        self.assertEqual(result.stats["code_blocks"], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

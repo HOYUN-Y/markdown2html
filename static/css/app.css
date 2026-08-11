@@ -1,0 +1,215 @@
+/* 마크다운 → Blogger 변환기 UI
+ *
+ * 블로그(blog.devprofessional.xyz)의 'Slate & Navy' 테마를 그대로 따른다.
+ * 토큰·컴포넌트 이름은 django_blog_Enhanced/static/css/blog.css 와 맞췄다
+ * (b-btn / b-mono / ed-card / ed-label …) — 나중에 블로그 화면 안으로 옮기더라도
+ * 클래스 이름을 다시 짓지 않게 하려는 것이다.
+ *
+ * 규칙: 컴포넌트 규칙 안에 hex를 직접 쓰지 않는다. 전부 var(--…). (blog.css 규칙 1)
+ */
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+/* ══ 토큰 — blog.css body.blog 와 동일 ═══════════════════ */
+:root {
+  --bg: #F5F6FA;
+  --bg-alt: #E9ECF4;
+  --bg-elev: #FFFFFF;
+
+  --text: #1A1F2B;
+  --text-muted: #5B6478;
+  --heading: #0D1220;
+
+  --line: rgba(26, 31, 43, .12);
+  --line-strong: rgba(26, 31, 43, .26);
+
+  --accent: #00215D;
+  --accent-hover: #002F84;
+  --accent-soft: rgba(0, 33, 93, .09);
+  --accent-on: #F3F6FC;
+
+  --ok: #1F6F4A;
+  --ok-soft: rgba(31, 111, 74, .1);
+  --warn: #8A5A00;
+  --warn-soft: rgba(138, 90, 0, .1);
+  --danger: #B0342A;
+  --danger-soft: rgba(176, 52, 42, .09);
+
+  --code-bg: #11162A;
+
+  --font-display: 'Space Grotesk', 'Pretendard', sans-serif;
+  --font-body: 'Pretendard', 'Space Grotesk', sans-serif;
+  --font-mono: 'Space Mono', 'Pretendard', monospace;
+
+  --radius: 3px;
+  --radius-lg: 10px;
+  --dur-2: 180ms;
+  --ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.b-mono { font-family: var(--font-mono); }
+.muted { color: var(--text-muted); }
+.hidden { display: none !important; }
+
+/* ══ 레이아웃 ═════════════════════════════════════════════ */
+.wrap {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 22px 26px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100dvh;
+}
+
+/* ══ 상단 바 — blog write.html .ed-top ════════════════════ */
+.ed-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.brand {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; color: var(--accent);
+  padding: 6px 10px; border: 1px solid var(--accent-soft);
+  background: var(--accent-soft); border-radius: var(--radius);
+}
+.ed-heading {
+  font-family: var(--font-display); font-size: 19px; font-weight: 700;
+  color: var(--heading);
+}
+.ed-top-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* ══ 버튼 — blog.css .b-btn ═══════════════════════════════ */
+.b-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 9px 16px; border: 1px solid transparent; border-radius: var(--radius);
+  font-family: inherit; font-size: 13px; font-weight: 700; line-height: 1.25;
+  cursor: pointer; transition: background var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+}
+.b-btn-accent { background: var(--accent); color: var(--accent-on); }
+.b-btn-accent:hover { background: var(--accent-hover); }
+.b-btn-line { border-color: var(--line-strong); color: var(--text); background: none; }
+.b-btn-line:hover { border-color: var(--accent); color: var(--accent); }
+.b-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.b-btn.is-done { background: var(--ok); border-color: var(--ok); color: #fff; }
+
+/* ══ 카드 · 폼 — blog write.html .ed-card ═════════════════ */
+.ed-card {
+  border: 1px solid var(--line); border-radius: var(--radius-lg);
+  background: var(--bg-elev); padding: 16px 18px;
+}
+.ed-label {
+  display: block; font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: .08em; color: var(--text-muted); font-weight: 700;
+  text-transform: uppercase; margin-bottom: 7px;
+}
+.ed-input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--line);
+  border-radius: var(--radius); background: var(--bg); color: var(--text);
+  font-family: var(--font-mono); font-size: 12.5px; outline: none;
+}
+.ed-input:focus { border-color: var(--accent); }
+.ed-check {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text); cursor: pointer; user-select: none;
+}
+.ed-check input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+.ed-note { font-size: 11.5px; line-height: 1.6; color: var(--text-muted); }
+
+.opts { display: flex; align-items: end; gap: 22px; flex-wrap: wrap; }
+.opts .field { flex: 1 1 340px; min-width: 260px; }
+.opts .checks { display: flex; gap: 18px; flex-wrap: wrap; padding-bottom: 9px; }
+
+/* ══ 알림 배너 ════════════════════════════════════════════ */
+.banners { display: flex; flex-direction: column; gap: 8px; }
+.banner {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 11px 14px; border-radius: var(--radius);
+  font-size: 13px; line-height: 1.6; border: 1px solid transparent;
+}
+.banner .tag {
+  flex: none; font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; padding-top: 2px;
+}
+.banner-warn { background: var(--warn-soft); border-color: rgba(138, 90, 0, .3); color: var(--warn); }
+.banner-note { background: var(--accent-soft); border-color: rgba(0, 33, 93, .2); color: var(--accent); }
+.banner-error { background: var(--danger-soft); border-color: rgba(176, 52, 42, .3); color: var(--danger); }
+
+/* ══ 2단 그리드 ═══════════════════════════════════════════ */
+.grid {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px;
+}
+.pane { display: flex; flex-direction: column; min-height: 0; padding: 0; overflow: hidden; }
+.pane-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; border-bottom: 1px solid var(--line);
+  background: var(--bg-alt); flex: none;
+}
+.pane-head .b-mono { font-size: 11px; letter-spacing: .12em; font-weight: 700; color: var(--text-muted); }
+.pane-head .right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+.tabs { display: flex; gap: 4px; }
+.tab {
+  padding: 5px 12px; border: 1px solid transparent; border-radius: var(--radius);
+  background: none; cursor: pointer; font-family: var(--font-mono);
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  color: var(--text-muted); transition: all var(--dur-2) var(--ease);
+}
+.tab:hover { color: var(--accent); }
+.tab.is-on { background: var(--heading); color: var(--bg); }
+
+/* 입력·출력 영역 — 카드 안을 꽉 채운다 */
+.ed-area {
+  flex: 1; min-height: 0; width: 100%; resize: none; border: 0; outline: none;
+  padding: 16px 18px; background: var(--bg-elev); color: var(--text);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.75;
+  tab-size: 2;
+}
+.ed-area::placeholder { color: var(--text-muted); }
+#out { background: var(--bg-alt); }
+
+#preview { flex: 1; min-height: 0; width: 100%; border: 0; background: #fff; }
+
+/* ══ 스니펫 다이얼로그 ════════════════════════════════════ */
+dialog {
+  border: 1px solid var(--line); border-radius: var(--radius-lg);
+  background: var(--bg-elev); color: var(--text);
+  padding: 0; max-width: 760px; width: calc(100% - 48px);
+}
+dialog::backdrop { background: rgba(13, 18, 32, .45); }
+.dlg-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px; border-bottom: 1px solid var(--line);
+}
+.dlg-head h2 { font-family: var(--font-display); font-size: 17px; color: var(--heading); }
+.dlg-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.dlg-body pre {
+  background: var(--code-bg); color: #adbac7; border-radius: var(--radius);
+  padding: 14px 16px; overflow: auto; max-height: 46vh;
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7;
+}
+.dlg-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 0 20px 18px; }
+
+.steps { font-size: 13px; line-height: 1.75; padding-left: 18px; color: var(--text); }
+.steps li + li { margin-top: 3px; }
+.steps code {
+  font-family: var(--font-mono); font-size: .9em; background: var(--bg-alt);
+  padding: 1px 5px; border-radius: var(--radius);
+}
+
+@media (max-width: 1080px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .pane { min-height: 62vh; }
+}

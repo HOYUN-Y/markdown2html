@@ -1,0 +1,49 @@
+# CHANGELOG
+
+이 저장소의 변경 요약. 상세한 작업 맥락·인계 사항은 [`WORKLOG.md`](./WORKLOG.md)에 있다.
+
+형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따른다.
+
+---
+
+## [0.1.0] — 2026-08-12
+
+첫 동작 버전. 마크다운을 Blogger 글쓰기 화면에 붙여넣을 수 있는 HTML로 바꾼다.
+
+### 추가
+
+- **변환 코어 `converter/`** — Flask/Django를 import하지 않는 순수 파이썬 패키지.
+  - `pipeline.py` — 블로그와 같은 확장 조합(`extra`·`toc`·`fenced_code`·`pymdownx.arithmatex`)으로 마크다운 → HTML
+  - `theme.py` — 블로그 `blog.css`(Slate & Navy)의 본문 조판을 인라인 스타일 표로 이식
+  - `highlight.py` — 블로그가 쓰는 highlight.js `github-dark-dimmed` 팔레트를 Pygments 스타일로 옮겨 **서버에서 색을 인라인으로** 박음
+  - `blogger.py` — 인라인화·개행 제거·이미지 절대경로·경고 수집
+  - `snippet.py` — Blogger 테마에 넣을 KaTeX/Mermaid 스니펫 (단일 출처)
+- **웹 UI `app.py` + `templates/` + `static/`** — 붙여넣기 → 자동 변환 → 복사.
+  블로그 전용 페이지의 디자인 토큰·컴포넌트 이름(`b-btn`/`b-mono`/`ed-card`)을 그대로 따름.
+  미리보기는 테마 스니펫을 넣은 iframe이라 **Blogger에서 보일 모습과 같다**.
+- **CLI `cli.py`** — 파일 단위 변환. `--preview`로 브라우저 확인용 문서도 함께 저장.
+- **테스트 `tests/test_convert.py`** — 26개 (stdlib unittest).
+- **문서** — `README.md`, `docs/PLAN.md`, `docs/WORKLOG.md`, `docs/blogger-theme-snippet.md`.
+
+### Blogger 대응 (이 프로젝트의 핵심)
+
+- CSS 클래스가 무용지물 → 모든 스타일을 `style=` 속성으로 인라인화
+- 개행이 `<br>`로 자동 변환됨 → 출력에 **개행 문자를 한 글자도 남기지 않음**
+  (코드블록 줄바꿈은 `<br>`, 다이어그램 줄바꿈은 `&#10;`)
+- `<pre>` 안 특수문자 → 이스케이프 유지한 채 Pygments 처리
+- 상대경로 이미지 → 기준 URL로 절대화, 없으면 경고
+
+### 수정
+
+- **코드블록의 `"`가 `&quot;`로 새던 문제** — 되돌리는 대상에 `&lt;`·`&gt;`·`&amp;`만
+  넣고 `&quot;`를 빠뜨려, 코드에 `&quot;`가 글자 그대로 찍혔다. `html.unescape`로 교체.
+- **mermaid 다이어그램이 'Syntax error in text'로 깨지던 문제** — 개행 제거 과정에서
+  다이어그램 소스가 한 줄로 뭉쳤다. `&#10;`(개행 실체 참조)으로 바꿔 Blogger의
+  줄바꿈 변환은 피하면서 브라우저 DOM에서는 진짜 개행이 되게 했다.
+
+### 알려진 제약
+
+- `$$...$$`를 **문장 안에** 쓰면 arithmatex가 span을 이중으로 감싼다.
+  블로그 파이프라인과 동일한 동작이라 그대로 뒀다. 블록 수식은 `$$`를 **줄 하나로** 띄워 쓴다.
+- Blogger 테마 CSS가 `.article-body p { margin: 0 }` 같은 규칙을 강하게 걸어두면
+  일부 여백이 덮일 수 있다. 인라인 스타일이 이기지만 `!important`는 못 이긴다.

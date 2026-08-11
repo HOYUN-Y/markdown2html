@@ -1,0 +1,13 @@
+# 블로그(django_blog_Enhanced)와 같은 HTML이 나오도록 버전을 맞춘다.
+# 올리면 같은 마크다운이 다른 HTML로 나오고, 블로그 쪽은 이 조합에서
+# 벗어나면 빌드가 깨진다(블로그 requirements.txt 주석 참고).
+markdown==3.4.1
+pymdown-extensions==9.11
+
+# 코드 하이라이팅을 서버에서 인라인 스타일로 박기 위해 필요.
+# Blogger에는 CSS 클래스를 붙일 곳이 없다.
+Pygments>=2.14
+
+# 로컬 웹 UI 전용. converter/ 패키지는 Flask를 import하지 않는다 —
+# 나중에 블로그(Django)로 이식할 때 폴더째 옮기기 위한 제약이다.
+Flask>=3.0

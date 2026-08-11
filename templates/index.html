@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>마크다운 → Blogger HTML</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+</head>
+<body>
+<div class="wrap">
+
+  <header class="ed-top">
+    <span class="brand">MD → BLOGGER</span>
+    <span class="ed-heading">마크다운을 Blogger용 HTML로</span>
+    <div class="ed-top-actions">
+      <button type="button" class="b-btn b-btn-line" id="snippetBtn">테마 스니펫</button>
+      <button type="button" class="b-btn b-btn-accent" id="copyBtn">HTML 복사</button>
+    </div>
+  </header>
+
+  <section class="ed-card opts">
+    <div class="field">
+      <label class="ed-label" for="baseUrl">이미지 기준 URL</label>
+      <input class="ed-input" id="baseUrl" type="url" spellcheck="false"
+             placeholder="https://blog.devprofessional.xyz" />
+    </div>
+    <div class="checks">
+      <label class="ed-check" title="출력에서 개행 문자를 모두 없앱니다. Blogger의 '엔터 = 줄바꿈' 설정과 무관하게 같은 결과가 나옵니다.">
+        <input type="checkbox" id="safeLinebreaks" checked /> 줄바꿈 안전 모드
+      </label>
+      <label class="ed-check" title="글꼴·행간을 지정한 컨테이너 div로 감쌉니다. 끄면 Blogger 테마의 본문 글꼴을 그대로 씁니다.">
+        <input type="checkbox" id="wrapDiv" checked /> 컨테이너로 감싸기
+      </label>
+    </div>
+  </section>
+
+  <div class="banners" id="banners"></div>
+
+  <div class="grid">
+    <section class="ed-card pane">
+      <div class="pane-head">
+        <span class="b-mono">MARKDOWN</span>
+        <div class="right"><span class="b-mono muted" id="srcStat">0자</span></div>
+      </div>
+      <textarea class="ed-area" id="src" spellcheck="false"
+                placeholder="블로그에 쓰던 마크다운을 그대로 붙여넣으세요."></textarea>
+    </section>
+
+    <section class="ed-card pane">
+      <div class="pane-head">
+        <div class="tabs">
+          <button type="button" class="tab is-on" data-tab="preview">미리보기</button>
+          <button type="button" class="tab" data-tab="html">HTML</button>
+        </div>
+        <div class="right"><span class="b-mono muted" id="outStat"></span></div>
+      </div>
+      <!-- 미리보기는 iframe으로 격리한다. 이 페이지 CSS가 새어 들어가면 Blogger에서
+           보일 모습과 달라져 미리보기의 의미가 없어진다. 테마 스니펫도 같이 넣어
+           수식·다이어그램까지 '스니펫 적용 후의 Blogger'와 같은 화면을 보여준다. -->
+      <iframe id="preview" title="Blogger 미리보기" sandbox="allow-scripts"></iframe>
+      <textarea class="ed-area hidden" id="out" readonly spellcheck="false"></textarea>
+    </section>
+  </div>
+</div>
+
+<dialog id="snippetDlg">
+  <div class="dlg-head">
+    <h2>Blogger 테마 스니펫</h2>
+    <button type="button" class="b-btn b-btn-line" style="margin-left:auto" id="snippetClose">닫기</button>
+  </div>
+  <div class="dlg-body">
+    <p class="ed-note">
+      코드블록·표·인용구는 스타일이 인라인이라 <strong>그냥 나옵니다</strong>.
+      아래 스니펫은 <strong>수식(KaTeX)과 mermaid 다이어그램에만</strong> 필요하며, 블로그당 한 번만 넣으면 됩니다.
+    </p>
+    <ol class="steps">
+      <li>Blogger 관리 → <code>테마</code> → <code>HTML 편집</code></li>
+      <li>맨 아래 <code>&lt;/body&gt;</code> 바로 위에 붙여넣기</li>
+      <li>저장</li>
+    </ol>
+    <pre id="snippetCode">{{ theme_snippet }}</pre>
+  </div>
+  <div class="dlg-foot">
+    <button type="button" class="b-btn b-btn-accent" id="snippetCopy">스니펫 복사</button>
+  </div>
+</dialog>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
