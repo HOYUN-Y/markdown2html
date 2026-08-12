@@ -58,6 +58,16 @@
     document.querySelectorAll("#outputChips .b-chip").forEach(function (chip) {
       chip.classList.toggle("is-on", chip.dataset.output === name);
     });
+    refreshCopyLabel();
+  }
+
+  // CSS 모드에서는 <style> 블록이 함께 나간다 — 'HTML 복사'는 무엇이 복사되는지
+  // 잘못 알려준다. 버튼과 탭 이름을 출력 방식에 맞춘다.
+  function refreshCopyLabel() {
+    var css = output === "css";
+    copyBtn.textContent = css ? "CSS + HTML 복사" : "HTML 복사";
+    var tab = document.querySelector('.tab[data-tab="html"]');
+    if (tab) tab.textContent = css ? "CSS + HTML" : "HTML";
   }
 
   function saveOptions() {
@@ -157,14 +167,16 @@
   }
 
   // ── 복사 ───────────────────────────────────────────────
-  function copyText(text, button, doneLabel) {
+  function copyText(text, button, doneLabel, restore) {
     if (!text) return;
     var original = button.textContent;
     navigator.clipboard.writeText(text).then(function () {
       button.textContent = doneLabel;
       button.classList.add("is-done");
       setTimeout(function () {
-        button.textContent = original;
+        // 복사 표시가 떠 있는 동안 출력 방식을 바꿨을 수 있다 —
+        // 붙잡아 둔 옛 라벨로 되돌리지 않고 현재 상태로 다시 그린다.
+        if (restore) restore(); else button.textContent = original;
         button.classList.remove("is-done");
       }, 1400);
     }).catch(function () {
@@ -200,7 +212,9 @@
       convert();
     });
   });
-  copyBtn.addEventListener("click", function () { copyText(out.value, copyBtn, "복사됨"); });
+  copyBtn.addEventListener("click", function () {
+    copyText(out.value, copyBtn, "복사됨", refreshCopyLabel);
+  });
 
   document.getElementById("snippetBtn").addEventListener("click", function () { dlg.showModal(); });
   document.getElementById("snippetClose").addEventListener("click", function () { dlg.close(); });
@@ -209,5 +223,6 @@
   });
 
   loadOptions();
+  refreshCopyLabel();
   schedule();
 })();
