@@ -36,6 +36,7 @@ def api_convert():
             safe_linebreaks=bool(payload.get("safe_linebreaks", True)),
             wrap=bool(payload.get("wrap", True)),
             palette=payload.get("palette") or "light",
+            output=payload.get("output") or "inline",
         )
     except Exception as exc:  # 변환 실패를 조용히 삼키지 않는다 — 화면에 그대로 띄운다.
         app.logger.exception("변환 실패")

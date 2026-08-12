@@ -84,6 +84,20 @@ Blogger 글쓰기 화면의 **HTML 보기에 붙여넣어도 안 깨지는 HTML*
 - [x] 테스트 7개 추가 (총 33개)
 - [x] 다크·상속 팔레트 렌더 확인
 
+### 6단계 — `<style>` 블록 출력 모드
+
+"글 본문에 CSS를 넣을 수 없다"는 대전제가 **틀렸음**을 확인했다(Blogger는 본문
+`<style>`을 정상 처리). 인라인으로는 못 옮기던 blog.css 형제 선택자 규칙을
+그대로 쓸 수 있게 됐다.
+
+- [x] `converter/stylesheet.py` — 팔레트별 스코프 CSS
+- [x] `highlight.style_defs()` — 강조 색을 스타일시트로
+- [x] `blogger.convert(output=...)` 분기
+- [x] 웹 UI 칩 + `cli.py --output`
+- [x] 스코프 강제 테스트 (`test_every_rule_is_scoped`)
+- [x] 적대적 테마 CSS를 주입해 렌더 검증 → 버그 3건 발견·수정
+- [x] 손익분기 실측 (원문 약 700자)
+
 ## 남은 일
 
 - [ ] **Blogger 실제 화면에 붙여넣어 확인** — 계정 접근이 필요해 아직 못 함.

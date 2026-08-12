@@ -42,6 +42,26 @@ Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
   비워두면 상대경로가 발견될 때 경고가 뜬다.
 - **줄바꿈 안전 모드**(기본 켬) — 아래 [Blogger 대응](#blogger가-html을-망가뜨리는-지점) 참고.
 
+## 출력 방식 — 인라인 vs `<style>` 블록
+
+Blogger는 글 본문의 `<style>` 태그를 정상 처리한다(`<html>`/`<head>`/`<body>`만 넣지 않으면 된다).
+그래서 두 가지로 낼 수 있다.
+
+| | 인라인 (기본) | CSS 블록 |
+|---|---|---|
+| 조판 정확도 | blog.css의 `> * + *`·`li + li`를 **px로 근사** | **그대로 옮김** |
+| 길이 | 짧은 글에 유리 | 원문 **700자 넘으면** 유리 (실제 글: 43,637 → 24,633자) |
+| RSS 피드 | 서식 일부 유지 | **`<style>`이 제거돼 서식 없음** |
+| 편집기 가독성 | `style="…"` 범벅 | 사람이 읽고 손볼 수 있음 |
+| AMP | 가능 | **불가** (AMP는 본문 `<style>` 금지) |
+| Compose 모드 전환 | 비교적 안전 | 깨질 수 있음 — HTML 보기에서만 다룰 것 |
+
+CSS 블록 모드의 모든 규칙은 `.md2b.md2b-<팔레트>` 아래로 스코프된다. 글 목록·홈처럼
+여러 글이 한 페이지에 뜰 때 테마나 다른 글을 건드리지 않고, 팔레트가 다른 글끼리도
+충돌하지 않는다. 클래스를 겹쳐 특이도를 올려 테마 규칙에 지지 않는다.
+
+> `!important`로 본문 여백을 강제하는 테마는 **두 모드 모두** 이길 수 없다.
+
 ## 팔레트 — Blogger 테마 밝기에 맞추기
 
 스타일을 인라인으로 박는 방식의 대가다. **인라인 스타일에는 미디어쿼리를 넣을 수 없어서**
@@ -62,6 +82,7 @@ Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
 .venv/bin/python cli.py 글.md                        # → 글.blogger.html (붙여넣기용)
 .venv/bin/python cli.py 글.md --preview              # → 글.preview.html 도 함께 (브라우저 확인용)
 .venv/bin/python cli.py 글.md --palette dark         # 검은 배경 Blogger 테마용
+.venv/bin/python cli.py 글.md --output css           # <style> 블록 방식
 .venv/bin/python cli.py 글.md --base-url https://blog.devprofessional.xyz
 ```
 
@@ -78,8 +99,9 @@ Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
 
 | 문제 | 대응 |
 |---|---|
-| 글 본문에 CSS를 넣을 수 없어 클래스가 무용지물 | 모든 스타일을 `style=` 속성으로 인라인화 |
+| 글 본문의 CSS 클래스에 스타일을 못 붙임 | 모든 스타일을 `style=` 속성으로 인라인화 (또는 `<style>` 블록 + 스코프 클래스) |
 | 인라인 스타일은 미디어쿼리를 못 담아 테마 밝기에 자동 대응 불가 | 팔레트 3종(`light`/`dark`/`inherit`)에서 선택 |
+| `<style>` 안의 개행도 `<br>`로 바뀌어 CSS가 깨짐 | CSS도 개행 없이 한 줄로 출력 |
 | '엔터 = 줄바꿈' 설정이 개행을 전부 `<br>`로 바꿈 | 출력에 **개행 문자를 한 글자도 남기지 않음**. 코드블록은 `<br>`, 다이어그램은 `&#10;` |
 | `<pre>` 안의 `<`·`&`·`"`가 태그로 해석됨 | 이스케이프를 유지한 채 Pygments 처리 |
 | 상대경로 이미지가 Blogger 도메인 기준이 됨 | 기준 URL로 절대화, 없으면 경고 |
@@ -90,8 +112,9 @@ Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
 ```
 converter/          변환 코어 — Flask/Django를 import하지 않는다
   pipeline.py         마크다운 → HTML (블로그와 같은 확장 조합)
-  theme.py            블로그 blog.css 본문 조판 → 인라인 스타일 표
-  highlight.py        github-dark-dimmed 팔레트 → Pygments 인라인 하이라이팅
+  theme.py            팔레트 3종 + 인라인 스타일 표
+  stylesheet.py       <style> 블록 모드용 스코프 CSS
+  highlight.py        github-dark-dimmed 팔레트 → Pygments 하이라이팅 (인라인/클래스)
   blogger.py          인라인화·개행 제거·이미지 절대경로·경고 수집
   snippet.py          Blogger 테마용 KaTeX/Mermaid 스니펫 (단일 출처)
 app.py              Flask 웹 UI (라우트 2개)

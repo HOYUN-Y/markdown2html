@@ -212,6 +212,86 @@ class PaletteTest(unittest.TestCase):
                 self.assertEqual(convert(self.SAMPLE, palette=name).html.count("\n"), 0)
 
 
+class CssOutputTest(unittest.TestCase):
+    """`<style>` 블록 모드 — Blogger는 글 본문의 style 태그를 정상 처리한다."""
+
+    SAMPLE = ("## 소제목\n\n본문 [링크](https://e.com) `코드`\n\n> 인용\n\n"
+              "- 항목\n- 항목\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n"
+              "```python\nx = \"a\"\n```")
+
+    def test_style_block_comes_first(self):
+        html = convert(self.SAMPLE, output="css").html
+        self.assertTrue(html.startswith("<style>"))
+        self.assertIn("</style><div class=\"md2b md2b-light\">", html)
+
+    def test_body_has_no_inline_styles(self):
+        html = convert(self.SAMPLE, output="css").html
+        body = html.split("</style>", 1)[1]
+        self.assertNotIn("style=", body.replace('style="margin:28px 0', ""))
+
+    def test_every_rule_is_scoped(self):
+        css = convert(self.SAMPLE, output="css").html.split("</style>")[0]
+        # 스코프 없는 선택자가 하나라도 있으면 테마와 다른 글까지 건드린다.
+        for rule in css.replace("<style>", "").split("}"):
+            selector = rule.split("{")[0].strip()
+            if not selector:
+                continue
+            for part in selector.split(","):
+                self.assertTrue(
+                    part.strip().startswith(".md2b"),
+                    f"스코프 없는 선택자: {part.strip()!r}",
+                )
+
+    def test_palette_is_part_of_the_scope(self):
+        # 팔레트가 다른 글이 같은 페이지에 있어도 서로 덮어쓰지 않아야 한다.
+        light = convert(self.SAMPLE, output="css", palette="light").html
+        dark = convert(self.SAMPLE, output="css", palette="dark").html
+        self.assertIn(".md2b.md2b-light", light)
+        self.assertIn(".md2b.md2b-dark", dark)
+        self.assertNotIn(".md2b-dark", light)
+
+    def test_text_colors_are_explicit_not_inherited(self):
+        # 상속은 요소를 직접 겨냥한 테마 규칙(`p { color: … }`)에 무조건 진다.
+        css = convert(self.SAMPLE, output="css", palette="dark").html.split("</style>")[0]
+        self.assertIn(".md2b.md2b-dark p", css)
+        self.assertIn("#D7DEEC", css)
+
+    def test_inherit_palette_sets_no_text_color(self):
+        css = convert(self.SAMPLE, output="css", palette="inherit").html.split("</style>")[0]
+        self.assertNotIn("color:#D7DEEC", css)
+        self.assertNotIn("color:#1A1F2B", css)
+
+    def test_syntax_colors_move_into_the_stylesheet(self):
+        result = convert(self.SAMPLE, output="css")
+        css, body = result.html.split("</style>", 1)
+        self.assertIn("pre", css)
+        self.assertIn('<pre><code>', body)          # 껍데기에 style= 이 없다
+        self.assertIn('class="', body)              # 강조는 클래스로
+
+    def test_no_newline_anywhere_including_css(self):
+        # <style> 안의 개행도 Blogger가 <br>로 바꾼다 — 그 지점부터 CSS가 깨진다.
+        self.assertEqual(convert(self.SAMPLE, output="css").html.count("\n"), 0)
+
+    def test_css_wins_on_long_posts_and_loses_on_short_ones(self):
+        """스타일시트는 고정 비용이다 — 짧은 글에서는 인라인이 더 짧다.
+
+        이걸 모르고 'CSS 모드가 항상 짧다'고 안내하면 안 된다.
+        """
+        short = self.SAMPLE
+        long_post = self.SAMPLE + ("\n\n문단입니다. " * 400)
+
+        def size(text, mode):
+            return convert(text, output=mode).stats["characters"]
+
+        self.assertGreater(size(short, "css"), size(short, "inline"))
+        self.assertLess(size(long_post, "css"), size(long_post, "inline"))
+
+    def test_wrap_off_is_reported_not_silently_ignored(self):
+        result = convert(self.SAMPLE, output="css", wrap=False)
+        self.assertIn('class="md2b', result.html)
+        self.assertTrue(any("컨테이너" in n for n in result.notes))
+
+
 class EmptyInputTest(unittest.TestCase):
     def test_empty_is_not_an_error(self):
         result = convert("")

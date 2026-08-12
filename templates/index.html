@@ -35,6 +35,15 @@
                 title="글자색을 지정하지 않아 Blogger 테마가 칠합니다. 나중에 테마를 바꿔도 안 깨지지만 블로그와 똑같은 색은 아닙니다.">테마 색 상속</button>
       </div>
     </div>
+    <div class="field-tight">
+      <span class="ed-label">출력 방식</span>
+      <div class="b-chips" id="outputChips">
+        <button type="button" class="b-chip is-on" data-output="inline"
+                title="모든 스타일을 style= 속성에 박습니다. RSS 피드에서도 서식이 살아있습니다.">인라인</button>
+        <button type="button" class="b-chip" data-output="css"
+                title="맨 앞에 &lt;style&gt; 블록을 둡니다. 본문이 짧아지고 조판이 더 정확하지만 RSS에서는 서식이 빠집니다.">CSS 블록</button>
+      </div>
+    </div>
     <div class="checks">
       <label class="ed-check" title="출력에서 개행 문자를 모두 없앱니다. Blogger의 '엔터 = 줄바꿈' 설정과 무관하게 같은 결과가 나옵니다.">
         <input type="checkbox" id="safeLinebreaks" checked /> 줄바꿈 안전 모드

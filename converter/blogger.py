@@ -23,7 +23,7 @@ from html.parser import HTMLParser
 from urllib.parse import urljoin, urlparse
 
 from . import highlight as hl
-from . import pipeline, theme
+from . import pipeline, stylesheet, theme
 
 # fenced_code가 내놓는 코드블록. 언어가 없으면 class 속성 자체가 없다.
 _CODE_BLOCK = re.compile(
@@ -54,6 +54,7 @@ def convert(
     safe_linebreaks: bool = True,
     wrap: bool = True,
     palette: str = theme.DEFAULT_PALETTE,
+    output: str = "inline",
 ) -> ConversionResult:
     """마크다운 원문을 Blogger용 HTML 한 덩어리로 바꾼다.
 
@@ -65,19 +66,29 @@ def convert(
     :param palette: ``light`` / ``dark`` / ``inherit``.
         Blogger 테마의 배경 밝기에 맞춰 고른다 — 검은 테마에 ``light``를 쓰면
         본문이 배경에 묻힌다. ``inherit``은 글자색을 지정하지 않아 어떤 테마에도 맞다.
+    :param output: ``inline`` — 모든 스타일을 `style=` 속성에 박는다(기본).
+        ``css`` — 맨 앞에 `<style>` 블록을 두고 본문은 클래스만 갖는다.
+        본문이 훨씬 짧아지고 blog.css의 형제 선택자 규칙까지 그대로 옮겨진다.
+        대신 RSS 피드에서는 `<style>`이 제거돼 서식 없이 보인다.
     """
     warnings: list = []
     notes: list = []
     colors = theme.get(palette)
+    use_css = output == "css"
 
     html, info = pipeline.render(markdown_text)
     code_blocks = _count_code_blocks(html)
     html = _restyle_code_blocks(
-        html, colors=colors, safe_linebreaks=safe_linebreaks, warnings=warnings
+        html,
+        colors=colors,
+        safe_linebreaks=safe_linebreaks,
+        warnings=warnings,
+        use_css=use_css,
     )
 
     inliner = _Inliner(
-        tag_styles=theme.tag_styles(colors),
+        # CSS 모드에서는 스타일을 속성에 박지 않는다 — 스타일시트가 다 한다.
+        tag_styles={} if use_css else theme.tag_styles(colors),
         image_base_url=(image_base_url or "").strip(),
         collapse_newlines=True,
     )
@@ -86,7 +97,15 @@ def convert(
     html = "".join(inliner.parts).strip()
     warnings.extend(inliner.warnings)
 
-    if wrap:
+    if use_css:
+        # 스타일시트가 컨테이너 클래스를 기준으로 쓰여 있어 감싸기는 선택이 아니다.
+        if not wrap:
+            notes.append("CSS 블록 모드는 컨테이너가 있어야 동작해 '컨테이너로 감싸기'를 켠 채로 처리했습니다.")
+        html = (
+            f"{stylesheet.block(colors)}"
+            f'<div class="{stylesheet.root_class(colors)}">{html}</div>'
+        )
+    elif wrap:
         html = f'<div style="{theme.wrapper(colors)}">{html}</div>'
 
     if safe_linebreaks:
@@ -122,22 +141,24 @@ def _count_code_blocks(html: str) -> int:
 
 
 def _restyle_code_blocks(
-    html: str, *, colors: "theme.Palette", safe_linebreaks: bool, warnings: list
+    html: str, *, colors: "theme.Palette", safe_linebreaks: bool, warnings: list,
+    use_css: bool = False,
 ) -> str:
-    pre_style = theme.pre_style(colors)
+    # CSS 모드에서는 껍데기도 색도 스타일시트가 맡는다 — 여기서는 마크업만 만든다.
+    open_pre = "<pre><code>" if use_css else (
+        f'<pre style="{theme.pre_style(colors)}">'
+        f'<code style="{theme.PRE_CODE_STYLE}">'
+    )
 
     def replace(match: "re.Match") -> str:
         lang = _language_of(match.group(1))
         code = _unescape(match.group(2)).strip("\n")
-        highlighted, warning = hl.highlight(code, lang)
+        highlighted, warning = hl.highlight(code, lang, inline_colors=not use_css)
         if warning:
             warnings.append(warning)
         if safe_linebreaks:
             highlighted = highlighted.replace("\n", "<br>")
-        return (
-            f'<pre style="{pre_style}">'
-            f'<code style="{theme.PRE_CODE_STYLE}">{highlighted}</code></pre>'
-        )
+        return f"{open_pre}{highlighted}</code></pre>"
 
     return _CODE_BLOCK.sub(replace, html)
 

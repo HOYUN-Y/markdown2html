@@ -24,6 +24,7 @@
   var STORE_KEY = "md2blogger:options";
   var timer = null;
   var palette = "light";
+  var output = "inline";
 
   // 미리보기 배경 — 팔레트가 가정하는 Blogger 테마를 흉내 낸다.
   // inherit은 글자색을 지정하지 않으므로 어두운 테마에 얹은 모습으로 보여준다.
@@ -41,6 +42,7 @@
       if (typeof saved.safeLinebreaks === "boolean") safeLinebreaks.checked = saved.safeLinebreaks;
       if (typeof saved.wrapDiv === "boolean") wrapDiv.checked = saved.wrapDiv;
       if (saved.palette && PREVIEW_SURFACE[saved.palette]) setPalette(saved.palette);
+      if (saved.output) setOutput(saved.output);
     } catch (e) { /* 저장값이 깨졌으면 기본값으로 간다 */ }
   }
 
@@ -51,13 +53,21 @@
     });
   }
 
+  function setOutput(name) {
+    output = name;
+    document.querySelectorAll("#outputChips .b-chip").forEach(function (chip) {
+      chip.classList.toggle("is-on", chip.dataset.output === name);
+    });
+  }
+
   function saveOptions() {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify({
         baseUrl: baseUrl.value,
         safeLinebreaks: safeLinebreaks.checked,
         wrapDiv: wrapDiv.checked,
-        palette: palette
+        palette: palette,
+        output: output
       }));
     } catch (e) { /* 사파리 프라이빗 모드 등 — 저장 실패는 무시 */ }
   }
@@ -86,7 +96,8 @@
         image_base_url: baseUrl.value,
         safe_linebreaks: safeLinebreaks.checked,
         wrap: wrapDiv.checked,
-        palette: palette
+        palette: palette,
+        output: output
       })
     })
       .then(function (res) { return res.json().then(function (b) { return { ok: res.ok, body: b }; }); })
@@ -180,6 +191,12 @@
   document.querySelectorAll("#paletteChips .b-chip").forEach(function (chip) {
     chip.addEventListener("click", function () {
       setPalette(chip.dataset.palette);
+      convert();
+    });
+  });
+  document.querySelectorAll("#outputChips .b-chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      setOutput(chip.dataset.output);
       convert();
     });
   });

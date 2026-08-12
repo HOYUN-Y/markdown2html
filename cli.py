@@ -49,6 +49,10 @@ def main(argv=None) -> int:
                         help="저장 위치 (기본: 원본과 같은 폴더)")
     parser.add_argument("--keep-newlines", action="store_true",
                         help="줄바꿈 안전 모드를 끈다 (Blogger 외 용도)")
+    parser.add_argument("--output", choices=["inline", "css"], default="inline",
+                        help="inline: 스타일을 style= 속성에 박는다(기본). "
+                             "css: 맨 앞에 <style> 블록을 둔다 — 본문이 짧아지고 조판이 "
+                             "정확해지지만 RSS 피드에서는 서식이 빠진다")
     parser.add_argument("--palette", choices=["light", "dark", "inherit"], default="light",
                         help="Blogger 테마 배경에 맞춘다. 검은 테마면 dark, "
                              "테마를 바꿀 수 있으면 inherit (기본: light)")
@@ -64,6 +68,7 @@ def main(argv=None) -> int:
         image_base_url=args.base_url,
         safe_linebreaks=not args.keep_newlines,
         palette=args.palette,
+        output=args.output,
     )
 
     out_dir = args.out_dir or args.source.parent
