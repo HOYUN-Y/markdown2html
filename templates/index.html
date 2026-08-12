@@ -24,6 +24,17 @@
       <input class="ed-input" id="baseUrl" type="url" spellcheck="false"
              placeholder="https://blog.devprofessional.xyz" />
     </div>
+    <div class="field-tight">
+      <span class="ed-label">Blogger 테마 배경</span>
+      <div class="b-chips" id="paletteChips">
+        <button type="button" class="b-chip is-on" data-palette="light"
+                title="흰색·밝은 배경 테마용. 블로그 라이트 모드와 같은 색.">밝은 배경</button>
+        <button type="button" class="b-chip" data-palette="dark"
+                title="검은·어두운 배경 테마용. 블로그 다크 모드와 같은 색.">검은 배경</button>
+        <button type="button" class="b-chip" data-palette="inherit"
+                title="글자색을 지정하지 않아 Blogger 테마가 칠합니다. 나중에 테마를 바꿔도 안 깨지지만 블로그와 똑같은 색은 아닙니다.">테마 색 상속</button>
+      </div>
+    </div>
     <div class="checks">
       <label class="ed-check" title="출력에서 개행 문자를 모두 없앱니다. Blogger의 '엔터 = 줄바꿈' 설정과 무관하게 같은 결과가 나옵니다.">
         <input type="checkbox" id="safeLinebreaks" checked /> 줄바꿈 안전 모드

@@ -22,13 +22,21 @@ _PREVIEW_DOC = """<!DOCTYPE html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>{title}</title>
-<style>body{{margin:0;padding:40px 24px;background:#fff;}}
+<style>body{{margin:0;padding:40px 24px;{surface}}}
 main{{max-width:780px;margin:0 auto;}}</style>
 {snippet}
 </head>
 <body><main>{body}</main></body>
 </html>
 """
+
+# 미리보기 배경 — 팔레트가 가정하는 Blogger 테마를 흉내 낸다.
+# inherit은 글자색을 지정하지 않으므로, 어두운 테마에 얹은 모습으로 보여준다.
+_PREVIEW_SURFACE = {
+    "light": "background:#fff;",
+    "dark": "background:#0C1018;",
+    "inherit": "background:#0C1018;color:#D7DEEC;",
+}
 
 
 def main(argv=None) -> int:
@@ -41,6 +49,9 @@ def main(argv=None) -> int:
                         help="저장 위치 (기본: 원본과 같은 폴더)")
     parser.add_argument("--keep-newlines", action="store_true",
                         help="줄바꿈 안전 모드를 끈다 (Blogger 외 용도)")
+    parser.add_argument("--palette", choices=["light", "dark", "inherit"], default="light",
+                        help="Blogger 테마 배경에 맞춘다. 검은 테마면 dark, "
+                             "테마를 바꿀 수 있으면 inherit (기본: light)")
     args = parser.parse_args(argv)
 
     if not args.source.is_file():
@@ -52,6 +63,7 @@ def main(argv=None) -> int:
         text,
         image_base_url=args.base_url,
         safe_linebreaks=not args.keep_newlines,
+        palette=args.palette,
     )
 
     out_dir = args.out_dir or args.source.parent
@@ -65,7 +77,12 @@ def main(argv=None) -> int:
     if args.preview:
         preview_path = out_dir / f"{stem}.preview.html"
         preview_path.write_text(
-            _PREVIEW_DOC.format(title=stem, snippet=THEME_SNIPPET, body=result.html),
+            _PREVIEW_DOC.format(
+                title=stem,
+                snippet=THEME_SNIPPET,
+                body=result.html,
+                surface=_PREVIEW_SURFACE.get(args.palette, _PREVIEW_SURFACE["light"]),
+            ),
             encoding="utf-8",
         )
         written.append(preview_path)

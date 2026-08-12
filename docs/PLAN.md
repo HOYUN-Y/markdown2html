@@ -71,10 +71,24 @@ Blogger 글쓰기 화면의 **HTML 보기에 붙여넣어도 안 깨지는 HTML*
 - [x] `docs/blogger-theme-snippet.md`
 - [x] `README.md`, `docs/CHANGELOG.md`, `docs/WORKLOG.md`
 
+### 5단계 — 팔레트 (실제 붙여넣기 후 나온 요구)
+
+사용자의 Blogger 테마가 **검은 배경**이라 라이트 팔레트 글자가 배경에 묻혔다.
+인라인 스타일은 미디어쿼리를 담을 수 없어 자동 대응이 불가능 → 선택지로 해결.
+
+- [x] `theme.py`를 `Palette` 구조로 재구성 (모듈 상수 → 함수)
+- [x] `dark` 팔레트 — blog.css `html[data-theme="dark"]` 토큰 그대로
+- [x] `inherit` 팔레트 — 글자색 미지정, Blogger 테마가 칠함
+- [x] 웹 UI 칩 선택 + 미리보기 배경 연동
+- [x] `cli.py --palette`
+- [x] 테스트 7개 추가 (총 33개)
+- [x] 다크·상속 팔레트 렌더 확인
+
 ## 남은 일
 
 - [ ] **Blogger 실제 화면에 붙여넣어 확인** — 계정 접근이 필요해 아직 못 함.
       무너지는 곳이 있으면 그 지점이 `converter/blogger.py`에 추가할 다음 대응이다.
+- [ ] 테마를 바꿀 계획이 있는지에 따라 `dark` / `inherit` 중 기본 선택 결정
 - [ ] 테마 스니펫을 실제 Blogger 테마에 넣고 수식·다이어그램 동작 확인
 - [ ] README 스크린샷 채우기
 

@@ -23,6 +23,15 @@
 
   var STORE_KEY = "md2blogger:options";
   var timer = null;
+  var palette = "light";
+
+  // 미리보기 배경 — 팔레트가 가정하는 Blogger 테마를 흉내 낸다.
+  // inherit은 글자색을 지정하지 않으므로 어두운 테마에 얹은 모습으로 보여준다.
+  var PREVIEW_SURFACE = {
+    light: "background:#fff;",
+    dark: "background:#0C1018;",
+    inherit: "background:#0C1018;color:#D7DEEC;"
+  };
 
   // ── 옵션 저장 — 매번 기준 URL을 다시 치지 않게 ────────────
   function loadOptions() {
@@ -31,7 +40,15 @@
       if (saved.baseUrl) baseUrl.value = saved.baseUrl;
       if (typeof saved.safeLinebreaks === "boolean") safeLinebreaks.checked = saved.safeLinebreaks;
       if (typeof saved.wrapDiv === "boolean") wrapDiv.checked = saved.wrapDiv;
+      if (saved.palette && PREVIEW_SURFACE[saved.palette]) setPalette(saved.palette);
     } catch (e) { /* 저장값이 깨졌으면 기본값으로 간다 */ }
+  }
+
+  function setPalette(name) {
+    palette = name;
+    document.querySelectorAll("#paletteChips .b-chip").forEach(function (chip) {
+      chip.classList.toggle("is-on", chip.dataset.palette === name);
+    });
   }
 
   function saveOptions() {
@@ -39,7 +56,8 @@
       localStorage.setItem(STORE_KEY, JSON.stringify({
         baseUrl: baseUrl.value,
         safeLinebreaks: safeLinebreaks.checked,
-        wrapDiv: wrapDiv.checked
+        wrapDiv: wrapDiv.checked,
+        palette: palette
       }));
     } catch (e) { /* 사파리 프라이빗 모드 등 — 저장 실패는 무시 */ }
   }
@@ -67,7 +85,8 @@
         markdown: src.value,
         image_base_url: baseUrl.value,
         safe_linebreaks: safeLinebreaks.checked,
-        wrap: wrapDiv.checked
+        wrap: wrapDiv.checked,
+        palette: palette
       })
     })
       .then(function (res) { return res.json().then(function (b) { return { ok: res.ok, body: b }; }); })
@@ -94,8 +113,9 @@
   // 미리보기는 '스니펫을 넣은 Blogger'와 같은 조건으로 만든다.
   function buildPreview(html) {
     var snippet = snippetCode ? snippetCode.textContent : "";
+    var surface = PREVIEW_SURFACE[palette] || PREVIEW_SURFACE.light;
     return "<!DOCTYPE html><html lang=\"ko\"><head><meta charset=\"utf-8\">" +
-      "<style>body{margin:0;padding:30px 34px;background:#fff;}</style>" +
+      "<style>body{margin:0;padding:30px 34px;" + surface + "}</style>" +
       snippet +
       "</head><body>" + html + "</body></html>";
   }
@@ -156,6 +176,12 @@
   src.addEventListener("input", schedule);
   [baseUrl, safeLinebreaks, wrapDiv].forEach(function (el) {
     el.addEventListener("change", convert);
+  });
+  document.querySelectorAll("#paletteChips .b-chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      setPalette(chip.dataset.palette);
+      convert();
+    });
   });
   copyBtn.addEventListener("click", function () { copyText(out.value, copyBtn, "복사됨"); });
 

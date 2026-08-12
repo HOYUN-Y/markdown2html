@@ -168,6 +168,50 @@ class WrapperTest(unittest.TestCase):
         self.assertTrue(html.startswith("<p"))
 
 
+class PaletteTest(unittest.TestCase):
+    """Blogger 테마가 검은 배경이면 라이트 팔레트 글자가 배경에 묻힌다."""
+
+    SAMPLE = "## 소제목\n\n본문 [링크](https://e.com) `코드`\n\n> 인용\n\n| a |\n|---|\n| 1 |"
+
+    def test_light_is_the_default(self):
+        self.assertEqual(convert(self.SAMPLE).html, convert(self.SAMPLE, palette="light").html)
+
+    def test_dark_uses_blog_dark_tokens(self):
+        html = convert(self.SAMPLE, palette="dark").html
+        self.assertIn("color:#D7DEEC", html)      # 본문
+        self.assertIn("color:#F3F6FC", html)      # 제목
+        self.assertIn("#6E9BE8", html)            # 강조(링크·h2 막대)
+        self.assertNotIn("#1A1F2B", html)         # 라이트 본문색이 새면 안 된다
+
+    def test_dark_darkens_code_background(self):
+        self.assertIn("background:#0A0F1A", convert("```\na\n```", palette="dark").html)
+
+    def test_inherit_sets_no_text_color(self):
+        html = convert(self.SAMPLE, palette="inherit").html
+        # 본문·제목에 색을 박지 않아야 Blogger 테마 색이 살아 있다.
+        self.assertNotIn("color:#D7DEEC", html)
+        self.assertNotIn("color:#1A1F2B", html)
+        self.assertNotIn("color:#0D1220", html)
+        # 링크·인용구 막대는 글자색을 따라간다.
+        self.assertIn("currentColor", html)
+
+    def test_inherit_still_styles_code_blocks(self):
+        # 코드블록은 블로그에서도 두 테마 모두 어둡다 — 상속 모드에서도 유지한다.
+        html = convert("```python\na = 1\n```", palette="inherit").html
+        self.assertIn("background:#11162A", html)
+
+    def test_unknown_palette_falls_back_to_light(self):
+        self.assertEqual(
+            convert(self.SAMPLE, palette="보라색").html,
+            convert(self.SAMPLE, palette="light").html,
+        )
+
+    def test_all_palettes_keep_linebreak_safety(self):
+        for name in ("light", "dark", "inherit"):
+            with self.subTest(palette=name):
+                self.assertEqual(convert(self.SAMPLE, palette=name).html.count("\n"), 0)
+
+
 class EmptyInputTest(unittest.TestCase):
     def test_empty_is_not_an_error(self):
         result = convert("")

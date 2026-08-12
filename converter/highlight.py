@@ -35,7 +35,9 @@ class BlogDarkDimmed(Style):
     옮긴 것이라, 같은 코드가 블로그와 Blogger에서 같은 색으로 보인다.
     """
 
-    background_color = theme.CODE_BG
+    # nowrap=True라 이 값이 출력에 나가지는 않는다(껍데기는 theme.pre_style이 만든다).
+    # Pygments Style이 요구하는 필드라 라이트 팔레트 값을 대표로 둔다.
+    background_color = theme.LIGHT.code_bg
 
     styles = {
         Token: theme.CODE_FG,          # #adbac7

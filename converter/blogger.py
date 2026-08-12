@@ -53,6 +53,7 @@ def convert(
     image_base_url: str = "",
     safe_linebreaks: bool = True,
     wrap: bool = True,
+    palette: str = theme.DEFAULT_PALETTE,
 ) -> ConversionResult:
     """마크다운 원문을 Blogger용 HTML 한 덩어리로 바꾼다.
 
@@ -61,15 +62,22 @@ def convert(
     :param safe_linebreaks: 출력에서 개행 문자를 모두 없앤다.
         Blogger의 '엔터 = 줄바꿈' 설정과 무관하게 같은 결과를 보장한다.
     :param wrap: 글꼴·행간을 지정한 컨테이너 ``<div>``로 감싼다.
+    :param palette: ``light`` / ``dark`` / ``inherit``.
+        Blogger 테마의 배경 밝기에 맞춰 고른다 — 검은 테마에 ``light``를 쓰면
+        본문이 배경에 묻힌다. ``inherit``은 글자색을 지정하지 않아 어떤 테마에도 맞다.
     """
     warnings: list = []
     notes: list = []
+    colors = theme.get(palette)
 
     html, info = pipeline.render(markdown_text)
     code_blocks = _count_code_blocks(html)
-    html = _restyle_code_blocks(html, safe_linebreaks=safe_linebreaks, warnings=warnings)
+    html = _restyle_code_blocks(
+        html, colors=colors, safe_linebreaks=safe_linebreaks, warnings=warnings
+    )
 
     inliner = _Inliner(
+        tag_styles=theme.tag_styles(colors),
         image_base_url=(image_base_url or "").strip(),
         collapse_newlines=True,
     )
@@ -79,7 +87,7 @@ def convert(
     warnings.extend(inliner.warnings)
 
     if wrap:
-        html = f'<div style="{theme.WRAPPER}">{html}</div>'
+        html = f'<div style="{theme.wrapper(colors)}">{html}</div>'
 
     if safe_linebreaks:
         # 마지막 보루 — 주석 등 파서가 그대로 흘려보낸 자리에 남은 개행까지 없앤다.
@@ -113,7 +121,11 @@ def _count_code_blocks(html: str) -> int:
     return len(_CODE_BLOCK.findall(html))
 
 
-def _restyle_code_blocks(html: str, *, safe_linebreaks: bool, warnings: list) -> str:
+def _restyle_code_blocks(
+    html: str, *, colors: "theme.Palette", safe_linebreaks: bool, warnings: list
+) -> str:
+    pre_style = theme.pre_style(colors)
+
     def replace(match: "re.Match") -> str:
         lang = _language_of(match.group(1))
         code = _unescape(match.group(2)).strip("\n")
@@ -123,7 +135,7 @@ def _restyle_code_blocks(html: str, *, safe_linebreaks: bool, warnings: list) ->
         if safe_linebreaks:
             highlighted = highlighted.replace("\n", "<br>")
         return (
-            f'<pre style="{theme.PRE_STYLE}">'
+            f'<pre style="{pre_style}">'
             f'<code style="{theme.PRE_CODE_STYLE}">{highlighted}</code></pre>'
         )
 
@@ -162,10 +174,12 @@ class _Inliner(HTMLParser):
     풀려버려서, 코드블록 안의 `<`가 다시 태그로 해석된다. 그대로 흘려보내야 한다.
     """
 
-    def __init__(self, *, image_base_url: str = "", collapse_newlines: bool = True):
+    def __init__(self, *, tag_styles: dict, image_base_url: str = "",
+                 collapse_newlines: bool = True):
         super().__init__(convert_charrefs=False)
         self.parts: list = []
         self.warnings: list = []
+        self.tag_styles = tag_styles
         self.pre_depth = 0
         self.image_count = 0
         self.image_base_url = image_base_url
@@ -194,7 +208,7 @@ class _Inliner(HTMLParser):
         self._absolutize(tag, pairs)
 
         # <pre> 안은 이미 완성된 상태라 손대지 않는다.
-        style = theme.TAG_STYLES.get(tag) if self.pre_depth == 0 else None
+        style = self.tag_styles.get(tag) if self.pre_depth == 0 else None
 
         rendered = []
         style_applied = False
