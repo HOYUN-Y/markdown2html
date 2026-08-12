@@ -73,6 +73,44 @@ class CodeBlockTest(unittest.TestCase):
         self.assertIn("hello world", result.html)
         self.assertTrue(any("wubbalubba" in w for w in result.warnings))
 
+    def _plain_warning(self, result):
+        return next((w for w in result.warnings if "색이 칠해지지 않은" in w), None)
+
+    def test_untagged_block_warns(self):
+        """언어 태그가 없으면 무채색이 되는데, 예전에는 **아무 신호도 없었다.**
+
+        블로그 화면은 highlight.js가 언어를 자동 감지해 태그 없이도 칠한다. 그래서
+        태그를 안 붙이면 같은 글이 블로그에서는 색이 있고 Blogger에서는 무채색이 된다.
+        조용히 지나가면 붙여넣고 나서야 알게 된다.
+        """
+        self.assertIsNotNone(self._plain_warning(convert("```\ndef f(): pass\n```")))
+
+    def test_colorless_language_warns_even_though_pygments_knows_it(self):
+        """```text 는 Pygments가 아는 언어라 '모르는 언어' 경고에 안 걸린다.
+
+        언어 이름이 아니라 **결과에 색이 붙었는지**로 판단해야 이게 잡힌다.
+        """
+        self.assertIsNotNone(self._plain_warning(convert("```text\nhello\n```")))
+
+    def test_warning_lists_which_blocks(self):
+        """어느 블록인지 안 알려주면 긴 글에서 찾을 수가 없다."""
+        doc = "```python\na=1\n```\n\n```\nb=2\n```\n\n```\nc=3\n```\n"
+        warning = self._plain_warning(convert(doc))
+        self.assertIn("2개", warning)
+        self.assertIn("2·3", warning)
+
+    def test_tagged_blocks_do_not_warn(self):
+        doc = "```python\na=1\n```\n\n```javascript\nvar b=2\n```\n"
+        self.assertIsNone(self._plain_warning(convert(doc)))
+
+    def test_warning_is_independent_of_output_mode(self):
+        """색이 어디에 적히든(속성이든 스타일시트든) 무채색 여부는 같아야 한다."""
+        for output in ("inline", "css"):
+            with self.subTest(output=output):
+                self.assertIsNotNone(
+                    self._plain_warning(convert("```\nx\n```", output=output))
+                )
+
     def test_html_special_chars_stay_escaped(self):
         # 이스케이프가 풀리면 Blogger 에디터가 태그로 해석해 글이 깨진다.
         result = convert("```html\n<div class=\"x\">a & b</div>\n```")

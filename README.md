@@ -174,7 +174,7 @@ converter/          변환 코어 — Flask/Django를 import하지 않는다
 app.py              Flask 웹 UI (라우트 2개)
 cli.py              파일 단위 변환
 templates/ static/  화면 — 블로그 전용 페이지의 디자인 토큰을 따름
-tests/              unittest 43개
+tests/              unittest 48개
 docs/               PLAN · CHANGELOG · WORKLOG · 테마 스니펫
 ```
 
@@ -241,4 +241,12 @@ result.stats     # 글자수·코드블록·이미지·다이어그램·남은 �
 - Blogger 테마 CSS가 `!important`로 본문 여백을 강제하면 **두 출력 방식 모두** 진다.
 - 팔레트는 자동으로 못 고른다. `prefers-color-scheme`은 OS 설정을 따르지 Blogger 테마
   밝기를 따르지 않는다.
+- **언어 태그가 없는 코드블록은 색이 안 나온다.** 블로그 화면은 highlight.js가 언어를
+  자동 감지해 태그 없이도 칠하지만(`highlightElement` → 언어 없으면 `highlightAuto`),
+  Pygments는 언어를 명시해야 칠한다. 태그 없는 블록이 섞이면 같은 글이 블로그에서는
+  전부 색이 있고 Blogger에서는 일부만 색이 있다 — 그래서 **무채색 블록이 몇 번째인지
+  경고로 알린다.** 언어를 적는 것이 유일한 해결책이다. 자동 추정은 일부러 안 한다:
+  짧은 조각을 엉뚱한 언어로 칠하면 무채색보다 나쁘다.
+- 태그를 붙여도 블로그와 **완전히 같지는 않다.** Pygments와 highlight.js는 토큰을
+  나누는 기준이 달라, 팔레트는 같아도 어느 단어에 어느 색이 가는지가 조금 갈린다.
 - Blogger 실제 화면에서의 최종 확인은 아직 못 했다(계정 접근 필요).

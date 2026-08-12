@@ -150,17 +150,42 @@ def _restyle_code_blocks(
         f'<code style="{theme.PRE_CODE_STYLE}">'
     )
 
+    # 색이 한 톨도 안 붙은 블록의 번호(1부터). 아래에서 한 줄 경고로 묶는다.
+    plain: list = []
+    seen = 0
+
     def replace(match: "re.Match") -> str:
+        nonlocal seen
+        seen += 1
         lang = _language_of(match.group(1))
         code = _unescape(match.group(2)).strip("\n")
         highlighted, warning = hl.highlight(code, lang, inline_colors=not use_css)
         if warning:
             warnings.append(warning)
+        # 언어를 물어보는 대신 **결과**를 본다. 색이 안 붙는 경로가 셋이나 되고
+        # (태그 없음 · Pygments가 모르는 이름 · TextLexer처럼 칠할 토큰이 없는 언어)
+        # 앞의 둘만 세면 ```text 가 조용히 빠져나간다. span이 없으면 무채색이다.
+        if "<span" not in highlighted:
+            plain.append(seen)
         if safe_linebreaks:
             highlighted = highlighted.replace("\n", "<br>")
         return f"{open_pre}{highlighted}</code></pre>"
 
-    return _CODE_BLOCK.sub(replace, html)
+    out = _CODE_BLOCK.sub(replace, html)
+
+    if plain:
+        # 이 경고가 없으면 무채색 블록은 **아무 신호 없이** 지나간다. 모르는 언어일
+        # 때만 위에서 경고가 뜨고, 정작 흔한 경우(태그를 안 붙였다)는 조용했다.
+        where = "·".join(str(i) for i in plain)
+        warnings.append(
+            f"색이 칠해지지 않은 코드블록이 {len(plain)}개 있습니다({where}번째). "
+            "언어 태그가 없거나 Pygments가 모르는 이름입니다. "
+            "블로그 화면은 highlight.js가 언어를 자동 감지해 태그 없이도 칠하므로, "
+            "그대로 두면 같은 글이 블로그에서는 색이 있고 Blogger에서는 무채색으로 "
+            "나옵니다 — ```python 처럼 언어를 적어주세요."
+        )
+
+    return out
 
 
 def _language_of(class_attr: str | None):
