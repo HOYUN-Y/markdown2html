@@ -21,15 +21,34 @@
 
 → **정적 HTML 변환**만이 SEO·피드·아카이빙이 모두 안전하다.
 
+## 로컬에서 띄우기
+
+아래 명령은 전부 **저장소 루트에서** 실행한다(경로는 모두 상대경로).
+
+```bash
+# 1) 처음 한 번 — 가상환경 만들고 의존성 설치
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# 2) 서버 실행 — Ctrl+C 로 종료
+.venv/bin/python app.py          # → http://127.0.0.1:5001
+```
+
+두 번째부터는 2번 한 줄이면 된다. 한 번에 붙여 쓰려면:
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/python app.py
+```
+
+`.venv/bin/python`을 직접 부르므로 `source .venv/bin/activate`는 필요 없다.
+포트를 바꾸려면 `app.py` 맨 아래 `port=5001`을 고친다.
+서버 없이 파일만 변환하려면 [CLI](#cli)를, 검증은 [테스트](#테스트)를 본다.
+
 ## 쓰는 법
 
 ### 웹 UI
 
-```bash
-python -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python app.py          # → http://127.0.0.1:5001
-```
-
+서버를 띄운 뒤 <http://127.0.0.1:5001> 을 연다.
 왼쪽에 마크다운을 붙여넣으면 오른쪽에 결과가 나온다. **HTML 복사**를 누르고
 Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
 

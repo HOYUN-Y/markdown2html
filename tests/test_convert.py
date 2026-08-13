@@ -99,6 +99,16 @@ class CodeBlockTest(unittest.TestCase):
         self.assertIn("2개", warning)
         self.assertIn("2·3", warning)
 
+    def test_empty_block_does_not_warn(self):
+        """빈 블록은 칠할 내용이 없어서 span이 없는 것이다 — 언어를 적어도 안 바뀐다."""
+        self.assertIsNone(self._plain_warning(convert("```\n```")))
+
+    def test_warning_does_not_blame_the_language_name(self):
+        """```text 는 이름이 맞는데도 걸린다. '모르는 이름'이라고 하면 안 된다 —
+        멀쩡한 언어 이름을 고치러 다니게 만든다."""
+        warning = self._plain_warning(convert("```text\nhello\n```"))
+        self.assertNotIn("모르는 이름", warning)
+
     def test_tagged_blocks_do_not_warn(self):
         doc = "```python\na=1\n```\n\n```javascript\nvar b=2\n```\n"
         self.assertIsNone(self._plain_warning(convert(doc)))

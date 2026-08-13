@@ -165,7 +165,10 @@ def _restyle_code_blocks(
         # 언어를 물어보는 대신 **결과**를 본다. 색이 안 붙는 경로가 셋이나 되고
         # (태그 없음 · Pygments가 모르는 이름 · TextLexer처럼 칠할 토큰이 없는 언어)
         # 앞의 둘만 세면 ```text 가 조용히 빠져나간다. span이 없으면 무채색이다.
-        if "<span" not in highlighted:
+        #
+        # 빈 블록은 세지 않는다 — 칠할 내용이 없어서 span이 없는 것이라,
+        # 언어를 적으라고 해봐야 달라질 게 없다.
+        if code.strip() and "<span" not in highlighted:
             plain.append(seen)
         if safe_linebreaks:
             highlighted = highlighted.replace("\n", "<br>")
@@ -179,10 +182,14 @@ def _restyle_code_blocks(
         where = "·".join(str(i) for i in plain)
         warnings.append(
             f"색이 칠해지지 않은 코드블록이 {len(plain)}개 있습니다({where}번째). "
-            "언어 태그가 없거나 Pygments가 모르는 이름입니다. "
+            # 원인을 하나로 단정하지 않는다 — ```text 처럼 **이름은 맞는데** 칠할
+            # 토큰이 없는 경우도 여기 걸린다. '모르는 이름'이라고 하면 멀쩡한
+            # 언어 이름을 고치러 다니게 된다.
+            "언어 태그가 없거나, 색을 칠할 수 없는 언어입니다. "
             "블로그 화면은 highlight.js가 언어를 자동 감지해 태그 없이도 칠하므로, "
             "그대로 두면 같은 글이 블로그에서는 색이 있고 Blogger에서는 무채색으로 "
-            "나옵니다 — ```python 처럼 언어를 적어주세요."
+            "나옵니다 — ```python 처럼 언어를 적어주세요. "
+            "평문이 맞다면(출력 로그 등) 무시해도 됩니다."
         )
 
     return out
