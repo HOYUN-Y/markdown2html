@@ -59,10 +59,11 @@
   function setDirection(name) {
     direction = name;
     var reverse = name === "reverse";
-    document.querySelectorAll("#directionChips .b-chip").forEach(function (chip) {
-      chip.classList.toggle("is-on", chip.dataset.direction === name);
-    });
+    document.getElementById("swapBtn").classList.toggle("is-reverse", reverse);
+    document.getElementById("swapLabel").textContent = reverse ? "HTML → MD" : "MD → HTML";
     document.getElementById("brand").textContent = reverse ? "BLOGGER → MD" : "MD → BLOGGER";
+    document.getElementById("heading").textContent =
+      reverse ? "HTML을 마크다운으로 되돌리기" : "마크다운을 Blogger용 HTML로";
     document.getElementById("srcLabel").textContent = reverse ? "HTML" : "MARKDOWN";
     src.placeholder = reverse
       ? "Blogger 글의 HTML 보기에서 복사한 내용이나, 웹페이지에서 긁어온 HTML 조각을 붙여넣으세요."
@@ -78,6 +79,16 @@
     document.getElementById("snippetBtn").classList.toggle("hidden", reverse);
     if (reverse) selectTab("html");
     refreshCopyLabel();
+  }
+
+  // ⇄ 는 '방향을 바꾼다'만이 아니라 **결과를 입력으로 옮긴다**는 뜻이다.
+  // 방향만 뒤집으면 왼쪽에 남은 마크다운을 HTML로 읽으려 들어 결과가 엉킨다.
+  // 옮겨도 잃는 것은 없다 — 바로 되변환되어 원래 글이 오른쪽에 다시 나온다.
+  function swapDirection() {
+    var produced = out.value;
+    setDirection(direction === "forward" ? "reverse" : "forward");
+    if (produced.trim()) src.value = produced;
+    schedule();
   }
 
   function setOutput(name) {
@@ -259,12 +270,7 @@
       convert();
     });
   });
-  document.querySelectorAll("#directionChips .b-chip").forEach(function (chip) {
-    chip.addEventListener("click", function () {
-      setDirection(chip.dataset.direction);
-      convert();
-    });
-  });
+  document.getElementById("swapBtn").addEventListener("click", swapDirection);
   copyBtn.addEventListener("click", function () {
     copyText(out.value, copyBtn, "복사됨", refreshCopyLabel);
   });

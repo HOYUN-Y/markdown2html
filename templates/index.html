@@ -11,12 +11,7 @@
 
   <header class="ed-top">
     <span class="brand" id="brand">MD → BLOGGER</span>
-    <div class="b-chips" id="directionChips">
-      <button type="button" class="b-chip is-on" data-direction="forward"
-              title="블로그에 쓰던 마크다운을 Blogger에 붙여넣을 HTML로">마크다운 → HTML</button>
-      <button type="button" class="b-chip" data-direction="reverse"
-              title="Blogger에 올린 글이나 웹페이지 조각을 마크다운으로 되찾아옵니다">HTML → 마크다운</button>
-    </div>
+    <span class="ed-heading" id="heading">마크다운을 Blogger용 HTML로</span>
     <div class="ed-top-actions">
       <button type="button" class="b-btn b-btn-line" id="snippetBtn">테마 스니펫</button>
       <button type="button" class="b-btn b-btn-accent" id="copyBtn">HTML 복사</button>
@@ -70,6 +65,15 @@
       <textarea class="ed-area" id="src" spellcheck="false"
                 placeholder="블로그에 쓰던 마크다운을 그대로 붙여넣으세요."></textarea>
     </section>
+
+    <div class="swap-wrap">
+      <button type="button" class="swap" id="swapBtn"
+              title="변환 방향을 바꿉니다. 오른쪽 결과가 왼쪽 입력으로 옮겨갑니다.">
+        <span class="swap-icon" aria-hidden="true">⇄</span>
+        <span class="hidden">변환 방향 바꾸기</span>
+      </button>
+      <span class="swap-label b-mono" id="swapLabel">MD → HTML</span>
+    </div>
 
     <section class="ed-card pane">
       <div class="pane-head">
