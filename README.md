@@ -1,6 +1,7 @@
 # markdown2html
 
-마크다운 원문을 **Blogger 글쓰기 화면에 그대로 붙여넣을 수 있는 HTML**로 바꾸는 로컬 도구.
+마크다운 원문을 **Blogger 글쓰기 화면에 그대로 붙여넣을 수 있는 HTML**로 바꾸는 도구.
+로컬로 띄워 쓰거나 Vercel에 올려 쓴다.
 
 결과물은 [`blog.devprofessional.xyz`](https://blog.devprofessional.xyz)의 본문 조판을
 그대로 따른다. 같은 글이 두 곳에서 같은 모양으로 보인다.
@@ -76,6 +77,45 @@ Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
 코드블록·표·인용구·이미지는 **스타일이 딸려 나가므로 그냥 나온다.** 스크립트가 필요한 건
 수식(KaTeX)과 mermaid뿐이고, Blogger 테마에 **한 번만** 넣으면 된다.
 → [`docs/blogger-theme-snippet.md`](docs/blogger-theme-snippet.md) (또는 화면의 **테마 스니펫** 버튼)
+
+## 배포 (Vercel)
+
+`tools.devprofessional.xyz`로 올린다. 블로그(Django 프리셋)와는 방식이 다르다 —
+Vercel의 **Flask 지원**은 `app.py`의 `app` 인스턴스를 알아서 찾는다. 별도 진입점
+파일(`api/index.py` 같은 것)은 필요 없다.
+
+```
+app.py          ← Vercel이 여기서 `app`을 찾는다 (설정 불필요)
+public/         ← 정적 파일. CDN이 직접 내보내고 함수까지 오지 않는다
+vercel.json     ← 함수 실행 시간만 지정
+requirements.txt
+```
+
+**`static/`이 아니라 `public/`인 이유:** Vercel 문서가 Flask의 `static_folder`를
+쓰지 말라고 못 박고 있다. 대신 `app.py`에서
+`Flask(__name__, static_folder="public", static_url_path="")`로 두었기 때문에
+**로컬에서도 같은 주소(`/css/app.css`)로 열린다.** 두 환경이 갈라지지 않는다.
+
+배포:
+
+```bash
+vercel        # 프리뷰
+vercel --prod # 프로덕션
+```
+
+그다음 Vercel 프로젝트 → Settings → Domains에서 `tools.devprofessional.xyz`를 추가하고,
+DNS에 Vercel이 알려주는 `CNAME`을 넣는다.
+
+### 알아둘 것
+
+- **함수 한도** — 요청 본문 4.5MB, 기본 타임아웃 30초(`vercel.json`에서 60초로 올려 둠).
+  `MAX_INPUT`을 50만 자로 잡은 게 이 때문이다. 한글은 UTF-8에서 한 자에 3바이트라
+  50만 자 ≈ 1.5MB로 한도 안에 넉넉히 들어간다. 실측 변환 시간은 정방향 1초·역방향 3초.
+- **공개 여부** — 올리면 누구나 쓸 수 있다. 저장하는 데이터도 비밀도 없지만 계산은
+  공짜가 아니다. 가려야 하면 Vercel의 **Deployment Protection**(비밀번호 또는 Vercel
+  계정 인증)을 켠다.
+- **Python 버전** — `markdown==3.4.1`은 오래된 핀이다(블로그와 맞추려고 고정한 것).
+  Vercel이 고르는 기본 런타임에서 빌드가 깨지면 버전을 맞춰야 한다.
 
 ## 도구를 늘릴 때
 
@@ -236,8 +276,10 @@ converter/          변환 코어 — Flask/Django를 import하지 않는다
 app.py              Flask 웹 UI (화면 · 정변환 · 역변환)
 tools.py            도구 목록 — 상단 탭이 여기서 그려진다
 cli.py              파일 단위 변환
-templates/ static/  화면 — 블로그 전용 페이지의 디자인 토큰을 따름
+templates/          화면 — 블로그 전용 페이지의 디자인 토큰을 따름
+public/             정적 파일 (Vercel이 CDN에서 직접 내보낸다)
 tests/              unittest 96개 (정방향 50 · 역방향 46)
+vercel.json         배포 설정 (함수 실행 시간)
 docs/               PLAN · CHANGELOG · WORKLOG · 테마 스니펫
 ```
 

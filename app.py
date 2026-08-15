@@ -12,10 +12,20 @@ from converter import convert
 from converter.snippet import THEME_SNIPPET
 from tools import nav
 
-app = Flask(__name__)
+# static_folder를 `public`으로 둔 것은 **Vercel 배포 때문이다.**
+# Vercel은 `public/**`을 CDN에서 직접 내보내고 함수까지 오지 않게 한다
+# (공식 문서: Flask의 static_folder를 쓰지 말고 public/을 쓰라고 못 박고 있다).
+# static_url_path=""로 두면 로컬에서도 같은 주소(`/css/app.css`)로 열리므로,
+# 템플릿의 url_for('static', …)를 그대로 쓸 수 있고 두 환경이 갈라지지 않는다.
+app = Flask(__name__, static_folder="public", static_url_path="")
 
-#: 붙여넣기 사고로 브라우저가 멈추는 걸 막는 상한. 글 하나로는 넉넉하다.
-MAX_INPUT = 2_000_000
+#: 붙여넣기 사고로 브라우저가 멈추는 걸 막는 상한.
+#:
+#: 글자 수로 세지만 **바이트로도 안전해야 한다** — Vercel 함수의 요청 본문 한도가
+#: 4.5MB인데, 한글은 UTF-8에서 한 자에 3바이트라 50만 자면 약 1.5MB다. 넉넉히 들어간다.
+#: (예전 200만 자는 한글로 6MB라 Vercel이 413으로 막았을 것이다.)
+#: 실측: 50만 자 변환에 정방향 1초·역방향 3초 — 기본 타임아웃 안에 들어온다.
+MAX_INPUT = 500_000
 
 
 @app.get("/")
