@@ -96,26 +96,28 @@ requirements.txt
 `Flask(__name__, static_folder="public", static_url_path="")`로 두었기 때문에
 **로컬에서도 같은 주소(`/css/app.css`)로 열린다.** 두 환경이 갈라지지 않는다.
 
-배포:
+배포는 **GitHub 연동**으로 한다(블로그와 같은 방식). Vercel 대시보드에서
+**Add New → Project → 이 저장소 import**. 프레임워크는 자동으로 Flask로 잡히고
+빌드 설정은 건드릴 게 없다. 이후 `main`에 push하면 자동 배포된다.
 
-```bash
-vercel        # 프리뷰
-vercel --prod # 프로덕션
-```
+CLI로 하려면 `npm i -g vercel` 후 `vercel` (프리뷰) / `vercel --prod` (프로덕션).
 
-그다음 Vercel 프로젝트 → Settings → Domains에서 `tools.devprofessional.xyz`를 추가하고,
+도메인은 프로젝트 → **Settings → Domains**에서 `tools.devprofessional.xyz`를 추가하고,
 DNS에 Vercel이 알려주는 `CNAME`을 넣는다.
 
 ### 알아둘 것
 
+- **Python 버전** — Vercel은 3.12(기본)·3.13·3.14만 지원한다. `.python-version`으로
+  **3.12에 고정**했다. `markdown==3.4.1`이 오래된 핀이라(블로그와 맞추려고 고정) 걱정이
+  있었지만, 3.12에서 99개 테스트 전부 통과하는 것을 확인했다.
 - **함수 한도** — 요청 본문 4.5MB, 기본 타임아웃 30초(`vercel.json`에서 60초로 올려 둠).
   `MAX_INPUT`을 50만 자로 잡은 게 이 때문이다. 한글은 UTF-8에서 한 자에 3바이트라
   50만 자 ≈ 1.5MB로 한도 안에 넉넉히 들어간다. 실측 변환 시간은 정방향 1초·역방향 3초.
-- **공개 여부** — 올리면 누구나 쓸 수 있다. 저장하는 데이터도 비밀도 없지만 계산은
-  공짜가 아니다. 가려야 하면 Vercel의 **Deployment Protection**(비밀번호 또는 Vercel
-  계정 인증)을 켠다.
-- **Python 버전** — `markdown==3.4.1`은 오래된 핀이다(블로그와 맞추려고 고정한 것).
-  Vercel이 고르는 기본 런타임에서 빌드가 깨지면 버전을 맞춰야 한다.
+- **번들 크기** — `vercel.json`의 `excludeFiles`로 `tests/`·`docs/`를 뺀다.
+  Python 함수는 트리 셰이킹이 없어 프로젝트 파일이 통째로 들어간다.
+- **공개 여부** — 올리면 주소를 아는 누구나 쓸 수 있다. 저장하는 데이터도 비밀도 없지만
+  계산은 공짜가 아니다. 가려야 하면 Vercel의 **Deployment Protection**(비밀번호 또는
+  Vercel 계정 인증)을 켠다. `public/robots.txt`로 색인은 막아 뒀다(접근 차단은 아니다).
 
 ## 도구를 늘릴 때
 
