@@ -10,8 +10,13 @@
 <div class="wrap">
 
   <header class="ed-top">
-    <span class="brand">MD → BLOGGER</span>
-    <span class="ed-heading">마크다운을 Blogger용 HTML로</span>
+    <span class="brand" id="brand">MD → BLOGGER</span>
+    <div class="b-chips" id="directionChips">
+      <button type="button" class="b-chip is-on" data-direction="forward"
+              title="블로그에 쓰던 마크다운을 Blogger에 붙여넣을 HTML로">마크다운 → HTML</button>
+      <button type="button" class="b-chip" data-direction="reverse"
+              title="Blogger에 올린 글이나 웹페이지 조각을 마크다운으로 되찾아옵니다">HTML → 마크다운</button>
+    </div>
     <div class="ed-top-actions">
       <button type="button" class="b-btn b-btn-line" id="snippetBtn">테마 스니펫</button>
       <button type="button" class="b-btn b-btn-accent" id="copyBtn">HTML 복사</button>
@@ -20,11 +25,11 @@
 
   <section class="ed-card opts">
     <div class="field">
-      <label class="ed-label" for="baseUrl">이미지 기준 URL</label>
+      <label class="ed-label" for="baseUrl" id="baseUrlLabel">이미지 기준 URL</label>
       <input class="ed-input" id="baseUrl" type="url" spellcheck="false"
              placeholder="https://blog.devprofessional.xyz" />
     </div>
-    <div class="field-tight">
+    <div class="field-tight" id="paletteField">
       <span class="ed-label">Blogger 테마 배경</span>
       <div class="b-chips" id="paletteChips">
         <button type="button" class="b-chip is-on" data-palette="light"
@@ -35,7 +40,7 @@
                 title="글자색을 지정하지 않아 Blogger 테마가 칠합니다. 나중에 테마를 바꿔도 안 깨지지만 블로그와 똑같은 색은 아닙니다.">테마 색 상속</button>
       </div>
     </div>
-    <div class="field-tight">
+    <div class="field-tight" id="outputField">
       <span class="ed-label">출력 방식</span>
       <div class="b-chips" id="outputChips">
         <button type="button" class="b-chip is-on" data-output="inline"
@@ -44,7 +49,7 @@
                 title="맨 앞에 &lt;style&gt; 블록을 둡니다. 본문이 짧아지고 조판이 더 정확하지만 RSS에서는 서식이 빠집니다.">CSS 블록</button>
       </div>
     </div>
-    <div class="checks">
+    <div class="checks" id="forwardChecks">
       <label class="ed-check" title="출력에서 개행 문자를 모두 없앱니다. Blogger의 '엔터 = 줄바꿈' 설정과 무관하게 같은 결과가 나옵니다.">
         <input type="checkbox" id="safeLinebreaks" checked /> 줄바꿈 안전 모드
       </label>
@@ -59,7 +64,7 @@
   <div class="grid">
     <section class="ed-card pane">
       <div class="pane-head">
-        <span class="b-mono">MARKDOWN</span>
+        <span class="b-mono" id="srcLabel">MARKDOWN</span>
         <div class="right"><span class="b-mono muted" id="srcStat">0자</span></div>
       </div>
       <textarea class="ed-area" id="src" spellcheck="false"
@@ -68,8 +73,8 @@
 
     <section class="ed-card pane">
       <div class="pane-head">
-        <div class="tabs">
-          <button type="button" class="tab is-on" data-tab="preview">미리보기</button>
+        <div class="tabs" id="tabs">
+          <button type="button" class="tab is-on" data-tab="preview" id="previewTab">미리보기</button>
           <button type="button" class="tab" data-tab="html">HTML</button>
         </div>
         <div class="right"><span class="b-mono muted" id="outStat"></span></div>

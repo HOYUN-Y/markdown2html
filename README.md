@@ -67,6 +67,7 @@ Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
 .venv/bin/python cli.py 글.md --preview              # → 글.preview.html 도 함께 (브라우저 확인용)
 .venv/bin/python cli.py 글.md --palette dark         # 검은 배경 Blogger 테마용
 .venv/bin/python cli.py 글.md --output css           # <style> 블록 방식
+.venv/bin/python cli.py 글.html --reverse            # 역방향 → 글.md
 .venv/bin/python cli.py 글.md --base-url https://blog.devprofessional.xyz
 ```
 
@@ -75,6 +76,34 @@ Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
 코드블록·표·인용구·이미지는 **스타일이 딸려 나가므로 그냥 나온다.** 스크립트가 필요한 건
 수식(KaTeX)과 mermaid뿐이고, Blogger 테마에 **한 번만** 넣으면 된다.
 → [`docs/blogger-theme-snippet.md`](docs/blogger-theme-snippet.md) (또는 화면의 **테마 스니펫** 버튼)
+
+## 역방향 — HTML을 마크다운으로
+
+Blogger에만 있는 글을 블로그로 되찾아오거나, 정방향이 제대로 동작했는지 **왕복으로
+검증**할 때 쓴다. 화면 상단의 `HTML → 마크다운` 칩, 또는 `cli.py --reverse`.
+
+```bash
+.venv/bin/python cli.py 글.html --reverse        # → 글.md
+```
+
+| 입력 | 결과 |
+|---|---|
+| 우리 변환기 출력 | 실제 글(21KB)로 왕복 확인 — 렌더에 영향 없는 공백만 빼면 HTML이 같다 |
+| Blogger·워드프로세서 | div 수프·인라인 스타일·빈 `<span>`을 걷어낸다 |
+| 임의의 웹페이지 | 조각 단위로 동작. **본문 추출은 하지 않는다** — 붙여넣을 부분은 사람이 고른다 |
+
+**되돌릴 수 없는 것은 버리지 않고 HTML로 남긴다.** 셀을 병합한 표, 중첩 표, iframe은
+마크다운에 문법이 없다. 억지로 평평하게 만들면 표가 조용히 뭉개지므로, 원본을 그대로
+두고 경고한다(마크다운은 원시 HTML을 허용한다).
+
+이스케이프는 **필요한 만큼만** 한다. 전부 감싸면 역슬래시 범벅이 될 뿐 아니라 없던
+문법을 만들어 낸다 — 실제로 본문의 `[이미지2 - 월별 단속]`을 `\[…\]`로 감쌌다가
+arithmatex가 그걸 LaTeX 수식 구분자로 읽어 문단이 통째로 수식이 된 적이 있다.
+
+> `converter/to_markdown.py`는 `beautifulsoup4`를 쓰고, **`converter/__init__.py`에서
+> import하지 않는다.** 블로그가 이 폴더를 복사해 쓰는데 그쪽은 정방향만 쓴다.
+> 여기서 끌어오면 블로그에 없는 의존성이 강제된다.
+> → `from converter.to_markdown import to_markdown`
 
 ## 두 가지 선택 — 무슨 색으로, 어디에
 
@@ -185,15 +214,16 @@ Blogger는 글 본문의 `<style>` 태그를 정상 처리한다(`<html>`/`<head
 ```
 converter/          변환 코어 — Flask/Django를 import하지 않는다
   pipeline.py         마크다운 → HTML (블로그와 같은 확장 조합)
+  to_markdown.py      역방향 HTML → 마크다운 (bs4 · __init__에서 import 안 함)
   theme.py            팔레트 3종 + 인라인 스타일 표
   stylesheet.py       <style> 블록 모드용 스코프 CSS
   highlight.py        github-dark-dimmed 팔레트 → Pygments 하이라이팅 (인라인/클래스)
   blogger.py          스타일 적용·개행 제거·이미지 절대경로·경고 수집
   snippet.py          Blogger 테마용 KaTeX/Mermaid 스니펫 (단일 출처)
-app.py              Flask 웹 UI (라우트 2개)
+app.py              Flask 웹 UI (화면 · 정변환 · 역변환)
 cli.py              파일 단위 변환
 templates/ static/  화면 — 블로그 전용 페이지의 디자인 토큰을 따름
-tests/              unittest 48개
+tests/              unittest 96개 (정방향 50 · 역방향 46)
 docs/               PLAN · CHANGELOG · WORKLOG · 테마 스니펫
 ```
 
@@ -255,6 +285,10 @@ result.stats     # 글자수·코드블록·이미지·다이어그램·남은 �
 
 ## 알려진 제약
 
+- **불릿 목록 바로 뒤에 번호 목록이 오면 두 번째가 첫 번째에 흡수된다** — `1. 2.`가
+  불릿이 된다(반대 순서도 같다). 사이에 문단이 있으면 정상이다. Python-Markdown 3.4.1의
+  동작이라 **블로그에도 같은 문제가 있다.** `sane_lists` 확장이 고치지만 그러면 블로그와
+  출력이 갈라지므로 함께 결정해야 한다.
 - `$$...$$`를 **문장 안에** 쓰면 arithmatex가 span을 이중으로 감싼다.
   블로그 파이프라인과 동일한 동작이라 그대로 뒀다 — 블록 수식은 `$$`를 줄 하나로 띄워 쓴다.
 - Blogger 테마 CSS가 `!important`로 본문 여백을 강제하면 **두 출력 방식 모두** 진다.

@@ -25,6 +25,7 @@
   var timer = null;
   var palette = "light";
   var output = "inline";
+  var direction = "forward";   // forward: md→html · reverse: html→md
 
   // 미리보기 배경 — 팔레트가 가정하는 Blogger 테마를 흉내 낸다.
   // inherit은 글자색을 지정하지 않으므로 어두운 테마에 얹은 모습으로 보여준다.
@@ -53,6 +54,32 @@
     });
   }
 
+  // 역방향에서는 팔레트·출력 방식·줄바꿈 옵션이 의미가 없다. 남겨두면
+  // 만져도 아무 일이 없어 고장으로 보인다 — 아예 감춘다.
+  function setDirection(name) {
+    direction = name;
+    var reverse = name === "reverse";
+    document.querySelectorAll("#directionChips .b-chip").forEach(function (chip) {
+      chip.classList.toggle("is-on", chip.dataset.direction === name);
+    });
+    document.getElementById("brand").textContent = reverse ? "BLOGGER → MD" : "MD → BLOGGER";
+    document.getElementById("srcLabel").textContent = reverse ? "HTML" : "MARKDOWN";
+    src.placeholder = reverse
+      ? "Blogger 글의 HTML 보기에서 복사한 내용이나, 웹페이지에서 긁어온 HTML 조각을 붙여넣으세요."
+      : "블로그에 쓰던 마크다운을 그대로 붙여넣으세요.";
+    document.getElementById("baseUrlLabel").textContent =
+      reverse ? "링크 기준 URL" : "이미지 기준 URL";
+    ["paletteField", "outputField", "forwardChecks"].forEach(function (id) {
+      document.getElementById(id).classList.toggle("hidden", reverse);
+    });
+    // 미리보기는 'Blogger에서 보일 모습'을 보여주는 화면이다. 결과가 마크다운일
+    // 때는 보여줄 것이 없으므로 탭을 감추고 결과 상자로 넘긴다.
+    document.getElementById("previewTab").classList.toggle("hidden", reverse);
+    document.getElementById("snippetBtn").classList.toggle("hidden", reverse);
+    if (reverse) selectTab("html");
+    refreshCopyLabel();
+  }
+
   function setOutput(name) {
     output = name;
     document.querySelectorAll("#outputChips .b-chip").forEach(function (chip) {
@@ -64,9 +91,14 @@
   // CSS 모드에서는 <style> 블록이 함께 나간다 — 'HTML 복사'는 무엇이 복사되는지
   // 잘못 알려준다. 버튼과 탭 이름을 출력 방식에 맞춘다.
   function refreshCopyLabel() {
+    var tab = document.querySelector('.tab[data-tab="html"]');
+    if (direction === "reverse") {
+      copyBtn.textContent = "마크다운 복사";
+      if (tab) tab.textContent = "MARKDOWN";
+      return;
+    }
     var css = output === "css";
     copyBtn.textContent = css ? "CSS + HTML 복사" : "HTML 복사";
-    var tab = document.querySelector('.tab[data-tab="html"]');
     if (tab) tab.textContent = css ? "CSS + HTML" : "HTML";
   }
 
@@ -98,23 +130,31 @@
       renderBanners([], []);
       return;
     }
-    fetch("/api/convert", {
+    var reverse = direction === "reverse";
+    var url = reverse ? "/api/to-markdown" : "/api/convert";
+    var payload = reverse
+      ? { html: src.value, base_url: baseUrl.value }
+      : {
+          markdown: src.value,
+          image_base_url: baseUrl.value,
+          safe_linebreaks: safeLinebreaks.checked,
+          wrap: wrapDiv.checked,
+          palette: palette,
+          output: output
+        };
+
+    fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        markdown: src.value,
-        image_base_url: baseUrl.value,
-        safe_linebreaks: safeLinebreaks.checked,
-        wrap: wrapDiv.checked,
-        palette: palette,
-        output: output
-      })
+      body: JSON.stringify(payload)
     })
       .then(function (res) { return res.json().then(function (b) { return { ok: res.ok, body: b }; }); })
       .then(function (r) {
         if (!r.ok) { showError(r.body.error || "변환에 실패했습니다."); return; }
-        out.value = r.body.html;
-        preview.srcdoc = buildPreview(r.body.html);
+        // 정방향은 html, 역방향은 text — 화면은 '결과'만 알면 된다.
+        var result = reverse ? r.body.text : r.body.html;
+        out.value = result;
+        preview.srcdoc = reverse ? "" : buildPreview(result);
         outStat.textContent = formatStats(r.body.stats);
         renderBanners(r.body.warnings, r.body.notes);
       })
@@ -123,11 +163,15 @@
 
   function formatStats(s) {
     var parts = [s.characters.toLocaleString("ko-KR") + "자"];
+    if (s.lines) parts.push(s.lines + "줄");
+    if (s.tables) parts.push("표 " + s.tables);
+    if (s.raw_html_kept) parts.push("HTML 유지 " + s.raw_html_kept);
     if (s.code_blocks) parts.push("코드 " + s.code_blocks);
     if (s.images) parts.push("이미지 " + s.images);
     if (s.mermaid) parts.push("다이어그램 " + s.mermaid);
     // 개행이 남아 있으면 Blogger에서 <br>로 변할 수 있다 — 눈에 보이게 둔다.
-    parts.push("개행 " + s.newlines);
+    // 역방향 결과에는 개행이 당연히 있으므로 이 지표를 쓰지 않는다.
+    if (typeof s.newlines === "number") parts.push("개행 " + s.newlines);
     return parts.join(" · ");
   }
 
@@ -185,14 +229,17 @@
   }
 
   // ── 탭 ────────────────────────────────────────────────
-  document.querySelectorAll(".tab").forEach(function (tab) {
-    tab.addEventListener("click", function () {
-      document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("is-on"); });
-      tab.classList.add("is-on");
-      var showHtml = tab.dataset.tab === "html";
-      out.classList.toggle("hidden", !showHtml);
-      preview.classList.toggle("hidden", showHtml);
+  function selectTab(name) {
+    document.querySelectorAll(".tab").forEach(function (t) {
+      t.classList.toggle("is-on", t.dataset.tab === name);
     });
+    var showHtml = name === "html";
+    out.classList.toggle("hidden", !showHtml);
+    preview.classList.toggle("hidden", showHtml);
+  }
+
+  document.querySelectorAll(".tab").forEach(function (tab) {
+    tab.addEventListener("click", function () { selectTab(tab.dataset.tab); });
   });
 
   // ── 배선 ───────────────────────────────────────────────
@@ -212,6 +259,12 @@
       convert();
     });
   });
+  document.querySelectorAll("#directionChips .b-chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      setDirection(chip.dataset.direction);
+      convert();
+    });
+  });
   copyBtn.addEventListener("click", function () {
     copyText(out.value, copyBtn, "복사됨", refreshCopyLabel);
   });
@@ -223,6 +276,6 @@
   });
 
   loadOptions();
-  refreshCopyLabel();
+  setDirection(direction);
   schedule();
 })();

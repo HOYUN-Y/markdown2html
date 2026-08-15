@@ -145,10 +145,8 @@ def _restyle_code_blocks(
     use_css: bool = False,
 ) -> str:
     # CSS 모드에서는 껍데기도 색도 스타일시트가 맡는다 — 여기서는 마크업만 만든다.
-    open_pre = "<pre><code>" if use_css else (
-        f'<pre style="{theme.pre_style(colors)}">'
-        f'<code style="{theme.PRE_CODE_STYLE}">'
-    )
+    pre_open = "<pre>" if use_css else f'<pre style="{theme.pre_style(colors)}">'
+    code_style = "" if use_css else f' style="{theme.PRE_CODE_STYLE}"'
 
     # 색이 한 톨도 안 붙은 블록의 번호(1부터). 아래에서 한 줄 경고로 묶는다.
     plain: list = []
@@ -172,7 +170,12 @@ def _restyle_code_blocks(
             plain.append(seen)
         if safe_linebreaks:
             highlighted = highlighted.replace("\n", "<br>")
-        return f"{open_pre}{highlighted}</code></pre>"
+        # 언어 이름을 클래스로 남긴다. 색은 이미 칠해져 있어 화면에는 영향이 없지만,
+        # 이게 없으면 **HTML을 다시 마크다운으로 되돌릴 때 ```python 을 복구할 수
+        # 없다**(converter/to_markdown.py). 블로그 화면의 highlight.js도 같은
+        # 클래스를 읽으므로, 이 HTML을 블로그로 되가져가도 그대로 동작한다.
+        lang_class = f' class="language-{lang}"' if lang else ""
+        return f"{pre_open}<code{lang_class}{code_style}>{highlighted}</code></pre>"
 
     out = _CODE_BLOCK.sub(replace, html)
 

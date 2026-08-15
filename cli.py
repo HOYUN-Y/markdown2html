@@ -40,8 +40,12 @@ _PREVIEW_SURFACE = {
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="마크다운을 Blogger용 HTML로 변환한다.")
-    parser.add_argument("source", type=Path, help="변환할 .md 파일")
+    parser = argparse.ArgumentParser(
+        description="마크다운을 Blogger용 HTML로 변환한다 (--reverse면 그 반대).")
+    parser.add_argument("source", type=Path, help="변환할 .md 파일 (--reverse면 .html)")
+    parser.add_argument("--reverse", action="store_true",
+                        help="HTML → 마크다운. Blogger에 올린 글을 되찾아올 때 쓴다. "
+                             "--palette·--output·--preview는 이때 의미가 없다")
     parser.add_argument("--base-url", default="", help="상대경로 이미지/링크에 붙일 기준 URL")
     parser.add_argument("--preview", action="store_true",
                         help="브라우저로 열어볼 수 있는 완전한 HTML 문서도 함께 저장")
@@ -63,6 +67,12 @@ def main(argv=None) -> int:
         return 1
 
     text = args.source.read_text(encoding="utf-8")
+    out_dir = args.out_dir or args.source.parent
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.reverse:
+        return _reverse(text, args, out_dir)
+
     result = convert(
         text,
         image_base_url=args.base_url,
@@ -71,8 +81,6 @@ def main(argv=None) -> int:
         output=args.output,
     )
 
-    out_dir = args.out_dir or args.source.parent
-    out_dir.mkdir(parents=True, exist_ok=True)
     stem = args.source.stem
 
     paste_path = out_dir / f"{stem}.blogger.html"
@@ -102,6 +110,27 @@ def main(argv=None) -> int:
         print(f"  [확인] {warning}")
     for note in result.notes:
         print(f"  [안내] {note}")
+    return 0
+
+
+def _reverse(html: str, args, out_dir: Path) -> int:
+    """HTML → 마크다운. bs4는 여기서만 필요하므로 늦게 import한다."""
+    from converter.to_markdown import to_markdown
+
+    result = to_markdown(html, base_url=args.base_url)
+    path = out_dir / f"{args.source.stem}.md"
+    if path.resolve() == args.source.resolve():
+        # 원본이 .md인데 --reverse를 준 경우. 덮어쓰면 원문이 사라진다.
+        path = out_dir / f"{args.source.stem}.from-html.md"
+    path.write_text(result.markdown, encoding="utf-8")
+
+    stats = result.stats
+    print(f"변환 완료 — {stats['characters']:,}자 · {stats['lines']}줄 · "
+          f"코드블록 {stats['code_blocks']}개 · 이미지 {stats['images']}개 · "
+          f"표 {stats['tables']}개")
+    print(f"  저장: {path}")
+    for warning in result.warnings:
+        print(f"  [확인] {warning}")
     return 0
 
 

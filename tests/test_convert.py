@@ -121,6 +121,20 @@ class CodeBlockTest(unittest.TestCase):
                     self._plain_warning(convert("```\nx\n```", output=output))
                 )
 
+    def test_language_name_survives_in_a_class(self):
+        """언어 이름이 남아야 HTML을 다시 마크다운으로 되돌릴 수 있다.
+
+        색은 이미 칠해져 있어 화면에는 영향이 없지만, 이 클래스가 없으면
+        왕복에서 ```python 이 그냥 ``` 으로 무너진다.
+        """
+        for output in ("inline", "css"):
+            with self.subTest(output=output):
+                html = convert("```python\nx = 1\n```", output=output).html
+                self.assertIn('class="language-python"', html)
+
+    def test_untagged_block_gets_no_language_class(self):
+        self.assertNotIn("language-", convert("```\nx = 1\n```").html)
+
     def test_html_special_chars_stay_escaped(self):
         # 이스케이프가 풀리면 Blogger 에디터가 태그로 해석해 글이 깨진다.
         result = convert("```html\n<div class=\"x\">a & b</div>\n```")
@@ -313,8 +327,9 @@ class CssOutputTest(unittest.TestCase):
         result = convert(self.SAMPLE, output="css")
         css, body = result.html.split("</style>", 1)
         self.assertIn("pre", css)
-        self.assertIn('<pre><code>', body)          # 껍데기에 style= 이 없다
-        self.assertIn('class="', body)              # 강조는 클래스로
+        self.assertIn("<pre><code", body)                    # 껍데기에 style= 이 없다
+        self.assertNotIn("<pre style=", body)
+        self.assertIn('class="', body)                       # 강조는 클래스로
 
     def test_no_newline_anywhere_including_css(self):
         # <style> 안의 개행도 Blogger가 <br>로 바꾼다 — 그 지점부터 CSS가 깨진다.

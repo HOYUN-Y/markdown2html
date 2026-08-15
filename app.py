@@ -50,5 +50,33 @@ def api_convert():
     )
 
 
+@app.post("/api/to-markdown")
+def api_to_markdown():
+    """역방향 — HTML을 마크다운으로 되돌린다.
+
+    bs4는 이 경로에서만 필요하다. 위쪽에서 import하면 정방향만 쓰는 쪽
+    (블로그가 converter/를 복사해 간다)에도 의존성이 강제된다.
+    """
+    from converter.to_markdown import to_markdown
+
+    payload = request.get_json(silent=True) or {}
+    html = payload.get("html") or ""
+    if len(html) > MAX_INPUT:
+        return jsonify(error=f"입력이 너무 깁니다 ({len(html):,}자). {MAX_INPUT:,}자까지 처리합니다."), 413
+
+    try:
+        result = to_markdown(html, base_url=payload.get("base_url") or "")
+    except Exception as exc:
+        app.logger.exception("역변환 실패")
+        return jsonify(error=f"변환 중 오류가 발생했습니다: {exc}"), 500
+
+    return jsonify(
+        text=result.markdown,
+        warnings=result.warnings,
+        notes=result.notes,
+        stats=result.stats,
+    )
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5001, debug=True)

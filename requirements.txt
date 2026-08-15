@@ -11,3 +11,9 @@ Pygments>=2.14
 # 로컬 웹 UI 전용. converter/ 패키지는 Flask를 import하지 않는다 —
 # 나중에 블로그(Django)로 이식할 때 폴더째 옮기기 위한 제약이다.
 Flask>=3.0
+
+# 역방향(HTML → 마크다운) 전용 — converter/to_markdown.py.
+# 깨진 HTML·비정상 중첩을 버텨야 해서 표준 파서로는 부족하다.
+# converter/__init__.py에서 import하지 않으므로, 정방향만 쓰는 곳
+# (블로그가 converter/를 복사해 간다)에는 없어도 된다.
+beautifulsoup4>=4.12
