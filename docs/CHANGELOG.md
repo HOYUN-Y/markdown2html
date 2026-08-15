@@ -6,6 +6,16 @@
 
 ---
 
+## [0.6.3] — 2026-08-15
+
+### 추가
+
+- **하단 푸터** — 블로그(`blog.devprofessional.xyz`)와 GitHub(`HOYUN-Y`) 링크.
+  `templates/_footer.html`로 빼 두어 도구가 늘어나면 `{% include %}` 한 줄로 쓴다
+  (`_toolbar.html`과 같은 방식). 스타일은 blog.css의 `.b-footer` 계열을 따랐다.
+
+---
+
 ## [0.6.2] — 2026-08-15
 
 배포 마무리. 동작 변화는 없다.

@@ -251,6 +251,24 @@ dialog::backdrop { background: rgba(13, 18, 32, .45); }
   padding: 1px 5px; border-radius: var(--radius);
 }
 
+/* ══ 푸터 — blog.css .b-footer 계열 ═══════════════════════ */
+.site-foot {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding-top: 16px; border-top: 1px solid var(--line);
+}
+.foot-mark { font-size: 10.5px; letter-spacing: .12em; font-weight: 700; color: var(--text-muted); }
+.foot-links { display: flex; gap: 18px; margin-left: auto; }
+.foot-links a {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted);
+  text-decoration: none; transition: color var(--dur-2) var(--ease);
+}
+.foot-links a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 720px) {
+  .site-foot { gap: 12px; }
+  .foot-links { margin-left: 0; }
+}
+
 /* ══ 방향 전환 — 두 판 사이 ═══════════════════════════════ */
 .swap-wrap {
   align-self: center;
