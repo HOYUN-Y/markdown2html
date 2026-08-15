@@ -1,0 +1,18 @@
+{# 도구 탭 — 목록은 tools.py의 TOOLS에서 온다. 여기를 고칠 일은 없다. #}
+<nav class="toolbar" aria-label="도구">
+  <span class="brand">BLOG TOOLS</span>
+  <div class="tool-tabs">
+    {% for tool in tools %}
+      {% if not tool.ready %}
+        {# 아직 없는 도구. 누를 수 없게 두되 무엇을 만들 셈인지는 남긴다. #}
+        <span class="tool-tab is-soon" title="{{ tool.summary }}">
+          {{ tool.name }}<em class="soon">준비 중</em>
+        </span>
+      {% elif tool.slug == current_tool %}
+        <span class="tool-tab is-on" aria-current="page" title="{{ tool.summary }}">{{ tool.name }}</span>
+      {% else %}
+        <a class="tool-tab" href="{{ tool.url }}" title="{{ tool.summary }}">{{ tool.name }}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</nav>

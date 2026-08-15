@@ -10,6 +10,7 @@ from flask import Flask, jsonify, render_template, request
 
 from converter import convert
 from converter.snippet import THEME_SNIPPET
+from tools import nav
 
 app = Flask(__name__)
 
@@ -19,7 +20,7 @@ MAX_INPUT = 2_000_000
 
 @app.get("/")
 def index():
-    return render_template("index.html", theme_snippet=THEME_SNIPPET)
+    return render_template("index.html", theme_snippet=THEME_SNIPPET, **nav("convert"))
 
 
 @app.post("/api/convert")

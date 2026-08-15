@@ -77,6 +77,19 @@ Blogger 글쓰기 화면의 **HTML 보기**에 붙여넣으면 끝이다.
 수식(KaTeX)과 mermaid뿐이고, Blogger 테마에 **한 번만** 넣으면 된다.
 → [`docs/blogger-theme-snippet.md`](docs/blogger-theme-snippet.md) (또는 화면의 **테마 스니펫** 버튼)
 
+## 도구를 늘릴 때
+
+이 저장소는 도구 하나가 아니라 **글쓰기 도구 모음**으로 간다. 화면 상단 탭은
+`tools.py`의 `TOOLS` 목록에서 그려지므로 **탭 자체를 손댈 일은 없다.**
+
+1. `tools.py`에 항목 추가 (`ready=True`, `url` 채우기)
+2. `app.py`에 라우트 — `render_template(..., **nav("<slug>"))`
+3. 템플릿에서 `{% include "_toolbar.html" %}`
+
+아직 없는 도구는 `ready=False`로 적어 두면 화면에 **'준비 중'**으로 나온다.
+계획을 문서 밖에 두지 않으려는 것이다. 지금 그렇게 올라와 있는 것:
+Mermaid 다이어그램, draw.io 임베드.
+
 ## 역방향 — HTML을 마크다운으로
 
 Blogger에만 있는 글을 블로그로 되찾아오거나, 정방향이 제대로 동작했는지 **왕복으로
@@ -221,6 +234,7 @@ converter/          변환 코어 — Flask/Django를 import하지 않는다
   blogger.py          스타일 적용·개행 제거·이미지 절대경로·경고 수집
   snippet.py          Blogger 테마용 KaTeX/Mermaid 스니펫 (단일 출처)
 app.py              Flask 웹 UI (화면 · 정변환 · 역변환)
+tools.py            도구 목록 — 상단 탭이 여기서 그려진다
 cli.py              파일 단위 변환
 templates/ static/  화면 — 블로그 전용 페이지의 디자인 토큰을 따름
 tests/              unittest 96개 (정방향 50 · 역방향 46)

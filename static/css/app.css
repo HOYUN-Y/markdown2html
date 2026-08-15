@@ -74,6 +74,30 @@ body {
   min-height: 100dvh;
 }
 
+/* ══ 도구 탭 — 목록은 tools.py에서 온다 ═══════════════════ */
+.toolbar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding-bottom: 14px; border-bottom: 1px solid var(--line);
+}
+.tool-tabs { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.tool-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  text-decoration: none; border: 1px solid transparent;
+  transition: all var(--dur-2) var(--ease);
+}
+a.tool-tab:hover { color: var(--accent); background: var(--accent-soft); }
+.tool-tab.is-on { background: var(--heading); color: var(--bg); }
+/* 아직 없는 도구 — 눌리지 않는다는 게 보여야 한다 */
+.tool-tab.is-soon { color: var(--text-muted); opacity: .55; cursor: default; }
+.soon {
+  font-family: var(--font-mono); font-style: normal; font-size: 9.5px;
+  font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 2px;
+  background: var(--line); color: var(--text-muted);
+}
+
 /* ══ 상단 바 — blog write.html .ed-top ════════════════════ */
 .ed-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .brand {

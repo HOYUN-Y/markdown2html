@@ -61,7 +61,8 @@
     var reverse = name === "reverse";
     document.getElementById("swapBtn").classList.toggle("is-reverse", reverse);
     document.getElementById("swapLabel").textContent = reverse ? "HTML → MD" : "MD → HTML";
-    document.getElementById("brand").textContent = reverse ? "BLOGGER → MD" : "MD → BLOGGER";
+    // 좌상단 배지는 이제 사이트 표시(BLOG TOOLS)라 방향을 따라가지 않는다.
+    // 방향은 ⇄ 버튼과 제목이 알린다.
     document.getElementById("heading").textContent =
       reverse ? "HTML을 마크다운으로 되돌리기" : "마크다운을 Blogger용 HTML로";
     document.getElementById("srcLabel").textContent = reverse ? "HTML" : "MARKDOWN";
