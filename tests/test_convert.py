@@ -194,6 +194,27 @@ class MathTest(unittest.TestCase):
         self.assertNotIn("<em>", html)
 
 
+class ListTest(unittest.TestCase):
+    """sane_lists가 빠지면 블로그와 출력이 갈라진다(pipeline.py 주석 참고)."""
+
+    # 목록 태그에는 인라인 스타일이 붙으므로 `<ol>`이 아니라 `<ol`로 찾는다.
+
+    def test_numbered_list_after_bullets_stays_a_numbered_list(self):
+        html = convert("- 불릿1\n- 불릿2\n\n1. 번호1\n2. 번호2").html
+        self.assertIn("</ul>", html)
+        self.assertIn("<ol", html)
+
+    def test_bullets_after_numbered_list_stay_bullets(self):
+        html = convert("1. 번호1\n2. 번호2\n\n- 불릿1\n- 불릿2").html
+        self.assertIn("</ol>", html)
+        self.assertIn("<ul", html)
+
+    def test_numbering_resumes_after_a_code_block(self):
+        # 절차 설명 중간에 코드가 끼면 뒤 목록이 1로 되돌아가면 안 된다.
+        html = convert("1. 첫째\n\n```python\nx = 1\n```\n\n2. 둘째").html
+        self.assertIn('<ol start="2"', html)
+
+
 class AssetUrlTest(unittest.TestCase):
     def test_relative_image_absolutized(self):
         html = convert("![x](/media/a.png)", image_base_url=BASE).html

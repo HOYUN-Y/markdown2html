@@ -3,7 +3,8 @@
 기준: `posts/views.py:129`
 
     markdown.Markdown(
-        extensions=["extra", "codehilite", "toc", "fenced_code", "pymdownx.arithmatex"],
+        extensions=["extra", "codehilite", "toc", "fenced_code",
+                    "pymdownx.arithmatex", "sane_lists"],
         extension_configs={"pymdownx.arithmatex": {"generic": True}},
     )
 
@@ -14,7 +15,10 @@
 - 블로그도 실제 화면 색은 codehilite가 아니라 브라우저의 highlight.js가 칠한다
   (templates/blog/detail.html:234). 즉 뒤 단계에서 칠하는 쪽이 오히려 블로그 동작에 가깝다.
 
-나머지(extra의 표·각주·attr_list, toc의 heading id, arithmatex의 수식 보호)는 블로그와 동일하다.
+나머지(extra의 표·각주·attr_list, toc의 heading id, arithmatex의 수식 보호,
+sane_lists의 목록 분리)는 블로그와 동일하다. **sane_lists를 빼면 안 된다** — 없으면
+불릿 목록 바로 뒤의 번호 목록이 앞 목록에 흡수돼(빈 줄을 사이에 둬도 그렇다) 같은 글이
+블로그에서는 `<ol>`로, Blogger에서는 불릿으로 나온다.
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ import markdown
 
 from . import theme
 
-EXTENSIONS = ["extra", "toc", "fenced_code", "pymdownx.arithmatex"]
+EXTENSIONS = ["extra", "toc", "fenced_code", "pymdownx.arithmatex", "sane_lists"]
 EXTENSION_CONFIGS = {"pymdownx.arithmatex": {"generic": True}}
 
 # ```mermaid 블록. 마크다운 변환 **전에** 빼돌린다 —
