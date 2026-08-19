@@ -298,3 +298,43 @@ dialog::backdrop { background: rgba(13, 18, 32, .45); }
   /* 세로로 쌓이면 버튼이 두 판 사이에 눕는다 */
   .swap-wrap { flex-direction: row; justify-content: center; gap: 12px; }
 }
+
+/* ══ 다이어그램 편집기 (/mermaid) ═════════════════════════ */
+/* 변환 화면과 달리 가운데 방향 전환 버튼이 없다 — 두 판이 반씩 나눠 갖는다. */
+.grid-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+
+/* 옵션 줄 오른쪽 끝의 안내문. 칩들이 왼쪽에 모이고 남는 폭을 가져간다. */
+.note-inline { flex: 1 1 260px; min-width: 220px; padding-bottom: 8px; }
+
+/* 다이어그램이 얹히는 바닥. blog.css에 없는 값이라 여기서 토큰을 만든다 —
+   밝은 쪽은 Blogger 기본 흰 배경, 어두운 쪽은 변환 화면 미리보기와 같은 색이다.
+   배경만 바꾸고 다시 그리지는 않는다(다이어그램 테마는 neutral 고정). */
+.dgm-stage {
+  --dgm-bg: #FFFFFF;
+  --dgm-bg-dark: #0C1018;
+  flex: 1; min-height: 0; overflow: auto;
+  display: grid; place-items: center; padding: 26px;
+  background: var(--dgm-bg);
+  transition: background var(--dur-2) var(--ease), opacity var(--dur-2) var(--ease);
+}
+.dgm-stage.is-dark { background: var(--dgm-bg-dark); }
+/* 문법이 깨진 동안에도 마지막 그림을 지우지 않는다. 흐리게 두어 '지금 보이는 것은
+   최신이 아니다'만 알린다 — 화면이 비면 무엇을 고치던 중인지가 사라진다. */
+.dgm-stage.is-stale { opacity: .4; }
+.dgm-slot { max-width: 100%; }
+.dgm-slot svg { max-width: 100%; height: auto; }
+
+/* 배너 안의 동작 버튼 (템플릿 되돌리기) */
+.banner-act {
+  margin-left: auto; flex: none;
+  border: 1px solid currentColor; background: none; color: inherit;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .06em; padding: 3px 10px; border-radius: var(--radius);
+  cursor: pointer; transition: background var(--dur-2) var(--ease);
+}
+.banner-act:hover { background: var(--bg-elev); }
+
+@media (max-width: 1080px) {
+  /* .grid의 1열 규칙보다 .grid-2가 뒤에 있어 그냥 두면 이겨버린다 */
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+}

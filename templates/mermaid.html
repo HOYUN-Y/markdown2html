@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mermaid 다이어그램</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+</head>
+{# mermaid의 주소·테마는 converter/snippet.py가 유일한 출처다. 테마 스니펫과 같은
+   값을 써야 여기서 본 그림과 Blogger에 붙여넣은 그림이 같다. #}
+<body data-mermaid-src="{{ mermaid_src }}" data-mermaid-theme="{{ mermaid_theme }}">
+<div class="wrap">
+
+  {% include "_toolbar.html" %}
+
+  <header class="ed-top">
+    <span class="ed-heading">다이어그램을 그려 마크다운으로</span>
+    <div class="ed-top-actions">
+      <button type="button" class="b-btn b-btn-line" id="svgBtn">SVG 저장</button>
+      <button type="button" class="b-btn b-btn-line" id="pngBtn">PNG 저장</button>
+      <button type="button" class="b-btn b-btn-accent" id="copyBtn">코드블록 복사</button>
+    </div>
+  </header>
+
+  <section class="ed-card opts">
+    <div class="field-tight">
+      <span class="ed-label">템플릿</span>
+      <div class="b-chips" id="tplChips">
+        {% for tpl in templates %}
+          <button type="button" class="b-chip" data-slug="{{ tpl.slug }}"
+                  title="{{ tpl.summary }}">{{ tpl.name }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="field-tight">
+      <span class="ed-label">미리보기 배경</span>
+      {# 다이어그램 테마는 `neutral` 고정이라 글자가 어둡다. 검은 배경 Blogger 테마에
+         올렸을 때 읽히는지는 배경을 바꿔 봐야만 알 수 있다. 렌더는 다시 하지 않는다. #}
+      <div class="b-chips" id="surfaceChips">
+        <button type="button" class="b-chip is-on" data-surface="light"
+                title="흰색·밝은 배경 Blogger 테마에 올렸을 때.">밝은 배경</button>
+        <button type="button" class="b-chip" data-surface="dark"
+                title="검은·어두운 배경 Blogger 테마에 올렸을 때. 글자가 묻히는지 확인합니다.">검은 배경</button>
+      </div>
+    </div>
+    <p class="ed-note note-inline">
+      Blogger에 붙여넣을 때 <strong>코드블록</strong>은 테마 스니펫이 있어야 그려집니다.
+      <strong>SVG·PNG</strong>는 스니펫 없이도 보입니다.
+    </p>
+  </section>
+
+  <div class="banners" id="banners"></div>
+
+  <div class="grid grid-2">
+    <section class="ed-card pane">
+      <div class="pane-head">
+        <span class="b-mono">MERMAID</span>
+        <div class="right"><span class="b-mono muted" id="srcStat"></span></div>
+      </div>
+      <textarea class="ed-area" id="src" spellcheck="false"
+                placeholder="다이어그램 소스를 쓰거나 위에서 템플릿을 고르세요.">{{ default_source }}</textarea>
+    </section>
+
+    <section class="ed-card pane">
+      <div class="pane-head">
+        <span class="b-mono">미리보기</span>
+        <div class="right"><span class="b-mono muted" id="outStat"></span></div>
+      </div>
+      <div class="dgm-stage" id="stage"><div class="dgm-slot" id="slot"></div></div>
+    </section>
+  </div>
+
+  {% include "_footer.html" %}
+</div>
+
+{# 템플릿 원문은 diagrams.py에서 온다. 화면에 두 벌(칩 라벨·소스)로 나누지 않고
+   목록째 넘겨야 종류를 늘릴 때 파이썬 쪽만 고치면 된다. #}
+<script type="application/json" id="tplData">{{ templates|tojson }}</script>
+<script type="module" src="{{ url_for('static', filename='js/diagram.js') }}"></script>
+</body>
+</html>

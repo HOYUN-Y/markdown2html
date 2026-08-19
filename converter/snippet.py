@@ -8,6 +8,10 @@
 
 블로그(templates/blog/detail.html)가 쓰는 것과 같은 버전·같은 설정이다.
 `throwOnError:false`는 수식 하나가 틀렸다고 글 전체가 안 보이는 일을 막는다.
+
+Mermaid의 CDN 주소와 테마는 **상수로 빼 두었다.** 다이어그램 편집기 화면(`/mermaid`)이
+같은 값을 읽어 같은 버전으로 그린다 — 갈라지면 편집기에서 본 그림과 Blogger에 붙여넣은
+그림이 달라진다. 이 파일이 유일한 출처다.
 """
 
 THEME_SNIPPET = """<!-- ── 마크다운 변환 글용 · KaTeX(수식) ─────────────── -->
@@ -28,10 +32,19 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 </script>
+"""
 
+#: Mermaid.js CDN(ESM). 테마 스니펫과 편집기 화면이 같은 주소를 쓴다.
+MERMAID_SRC = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs"
+
+#: 다이어그램 테마. Blogger 글 배경이 밝을 수도 어두울 수도 있어 중립을 쓴다
+#: (블로그 본문은 dark를 쓴다 — docs/blogger-theme-snippet.md 참고).
+MERMAID_THEME = "neutral"
+
+THEME_SNIPPET += """
 <!-- ── 마크다운 변환 글용 · Mermaid(다이어그램) ───────── -->
 <script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+  import mermaid from "%s";
+  mermaid.initialize({ startOnLoad: true, theme: "%s" });
 </script>
-"""
+""" % (MERMAID_SRC, MERMAID_THEME)
