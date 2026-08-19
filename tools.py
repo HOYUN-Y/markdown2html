@@ -26,8 +26,8 @@ TOOLS = [
         "slug": "mermaid",
         "name": "Mermaid 다이어그램",
         "summary": "다이어그램을 그려 보고 마크다운 코드블록으로 가져간다.",
-        "url": "",
-        "ready": False,
+        "url": "/mermaid",
+        "ready": True,
     },
     {
         "slug": "drawio",

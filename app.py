@@ -8,8 +8,9 @@ Flask는 이 파일에만 있다. 변환 로직은 `converter/` 패키지에 있
 
 from flask import Flask, jsonify, render_template, request
 
+import diagrams
 from converter import convert
-from converter.snippet import THEME_SNIPPET
+from converter.snippet import MERMAID_SRC, MERMAID_THEME, THEME_SNIPPET
 from tools import nav
 
 # static_folder를 `public`으로 둔 것은 **Vercel 배포 때문이다.**
@@ -31,6 +32,24 @@ MAX_INPUT = 500_000
 @app.get("/")
 def index():
     return render_template("index.html", theme_snippet=THEME_SNIPPET, **nav("convert"))
+
+
+@app.get("/mermaid")
+def mermaid():
+    """다이어그램 편집기.
+
+    **API가 없는 첫 화면이다.** mermaid는 브라우저에서 그리는 라이브러리이고
+    (배포처가 Vercel의 Python 함수라 서버에서 Node를 돌릴 수도 없다), 그렇게 그려야
+    Blogger에 붙여넣었을 때와 같은 그림이 나온다. 서버는 화면과 템플릿 목록만 준다.
+    """
+    return render_template(
+        "mermaid.html",
+        templates=diagrams.TEMPLATES,
+        default_source=diagrams.DEFAULT_SOURCE,
+        mermaid_src=MERMAID_SRC,
+        mermaid_theme=MERMAID_THEME,
+        **nav("mermaid"),
+    )
 
 
 @app.post("/api/convert")
