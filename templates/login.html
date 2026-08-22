@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>로그인 · def hy().tools</title>
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+</head>
+<body>
+<div class="login-wrap">
+  <form class="ed-card login-card" method="post" action="{{ url_for('login') }}">
+    <div class="b-brand login-brand">
+      {% include "_wordmark.html" %}
+      <span class="b-suffix">.tools</span>
+    </div>
+    <p class="ed-note">개인 작업 도구입니다. 비밀번호를 넣어 주세요.</p>
+
+    <div class="field">
+      <label class="ed-label" for="password">비밀번호</label>
+      {# autofocus — 이 화면에 올 이유가 하나뿐이라 바로 칠 수 있게 한다 #}
+      <input class="ed-input" id="password" name="password" type="password"
+             autocomplete="current-password" autofocus required />
+    </div>
+    <input type="hidden" name="next" value="{{ next }}" />
+
+    {% if error %}
+      <div class="banner banner-error">
+        <span class="tag">오류</span><span>{{ error }}</span>
+      </div>
+    {% endif %}
+
+    <button type="submit" class="b-btn b-btn-accent login-submit">들어가기</button>
+  </form>
+</div>
+</body>
+</html>

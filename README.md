@@ -115,9 +115,55 @@ DNS에 Vercel이 알려주는 `CNAME`을 넣는다.
   50만 자 ≈ 1.5MB로 한도 안에 넉넉히 들어간다. 실측 변환 시간은 정방향 1초·역방향 3초.
 - **번들 크기** — `vercel.json`의 `excludeFiles`로 `tests/`·`docs/`를 뺀다.
   Python 함수는 트리 셰이킹이 없어 프로젝트 파일이 통째로 들어간다.
-- **공개 여부** — 올리면 주소를 아는 누구나 쓸 수 있다. 저장하는 데이터도 비밀도 없지만
-  계산은 공짜가 아니다. 가려야 하면 Vercel의 **Deployment Protection**(비밀번호 또는
-  Vercel 계정 인증)을 켠다. `public/robots.txt`로 색인은 막아 뒀다(접근 차단은 아니다).
+- **공개 여부** — 올리면 주소를 아는 누구나 쓸 수 있다. 그래서 [로그인](#로그인)을 붙였다.
+  `public/robots.txt`로 색인도 막아 뒀다(접근 차단은 아니다).
+  Vercel의 **Deployment Protection은 쓸 수 없다** — Hobby 플랜에서는 프리뷰만 가려지고
+  프로덕션 도메인은 계속 공개다(프로덕션까지 가리려면 Pro 이상, 비밀번호 방식은 별도 과금).
+
+## 로그인
+
+이 사이트는 개인 작업 도구인데 주소를 아는 누구나 열 수 있는 곳에 있다. 그래서 화면과
+API를 전부 세션으로 가린다. **쓰는 사람이 한 명이라 계정 테이블 없이 비밀번호 하나**로 한다.
+
+세션은 **서명된 쿠키**다. 서버에 세션 저장소를 두지 않는다 — Vercel 함수는 요청마다 다른
+인스턴스일 수 있어서, 서버 쪽에 상태를 두면 로그인이 제멋대로 풀린다.
+
+### 켜는 법
+
+```bash
+.venv/bin/python scripts/make_password_hash.py      # 비밀번호를 물어보고 해시를 찍는다
+.venv/bin/python -c "import secrets; print(secrets.token_hex(32))"   # SECRET_KEY
+```
+
+나온 두 값을 Vercel → 프로젝트 → **Settings → Environment Variables**에 넣는다.
+
+| 환경변수 | 내용 |
+|---|---|
+| `TOOLS_PASSWORD_HASH` | 비밀번호 **해시**. 평문은 어디에도 두지 않는다 |
+| `SECRET_KEY` | 쿠키 서명 키. 바꾸면 기존 로그인이 전부 풀린다 |
+
+비밀번호를 명령줄 인자로 받지 않는 것은 셸 기록(`~/.zsh_history`)과 `ps` 목록에 평문이
+남기 때문이다. 스크립트가 물어보고, 화면에도 찍지 않는다.
+
+### 설정이 없을 때 — 환경마다 다르게 실패한다
+
+| | `TOOLS_PASSWORD_HASH` 없음 |
+|---|---|
+| 로컬 | **그냥 열린다.** 개발할 때마다 비밀번호를 넣게 하지 않는다 |
+| 배포본 | **503으로 잠근다.** 설정을 빠뜨린 채 올라가면 사이트가 통째로 공개되는데, 조용히 넘어갈 일이 아니다 — 열어 두는 대신 닫는 쪽으로 실패한다 |
+
+`SECRET_KEY`가 없으면 로컬에서는 임시 키를 만들어 쓰고(서버를 다시 띄우면 로그인이 풀린다),
+배포본에서는 **뜨지 않는다.** 인스턴스마다 키가 달라 로그인이 계속 풀리는 것보다 낫다.
+
+### 알아둘 것
+
+- **정적 파일(`public/`)은 가려지지 않는다.** Vercel이 CDN에서 직접 내보내 함수까지 오지
+  않기 때문이다. 그 안에 가릴 것이 없어서 그대로 두었다(CSS·JS뿐이다).
+- 화면은 로그인으로 보내지만 **API는 401 JSON으로 답한다.** 화면 JS가 HTML 리다이렉트를
+  받으면 파싱에 실패해 '서버에 연결하지 못했습니다'라는 엉뚱한 말을 하게 된다.
+- 해시 방식을 `pbkdf2:sha256`으로 못 박았다. Werkzeug 기본값(scrypt)은 OpenSSL 빌드에
+  따라 `hashlib.scrypt`가 없을 수 있고(이 저장소의 로컬 파이썬에 없다), 그러면 환경이
+  갈리는 순간 검증이 통째로 실패한다.
 
 ## 도구를 늘릴 때
 
@@ -331,6 +377,7 @@ converter/          변환 코어 — Flask/Django를 import하지 않는다
   blogger.py          스타일 적용·개행 제거·이미지 절대경로·경고 수집
   snippet.py          Blogger 테마용 KaTeX/Mermaid 스니펫 (단일 출처)
 app.py              Flask 웹 UI (변환 화면 · 정변환 · 역변환 · 다이어그램 화면)
+auth.py             로그인 — 모든 요청 앞에 서는 문지기
 tools.py            도구 목록 — 상단 탭이 여기서 그려진다
 diagrams.py         mermaid 시작 템플릿 5종 (편집기 화면 전용 · converter/ 밖)
 drawio.py           draw.io 임베드 주소·파라미터 (단일 출처)
@@ -340,7 +387,8 @@ public/             정적 파일 (Vercel이 CDN에서 직접 내보낸다)
   js/diagram.js       mermaid 편집기 동작 (렌더·내보내기 · 서버를 부르지 않는다)
   js/drawio.js        draw.io 편집기 동작 (postMessage · 내보내기 · 조각 다듬기)
   js/shared.js        두 편집기 화면이 함께 쓰는 것 (다운로드·배너)
-tests/              unittest 123개 (정방향 55 · 역방향 49 · 화면 19)
+scripts/            개발용 (비밀번호 해시 만들기 · 배포 번들에서 제외)
+tests/              unittest 135개 (정방향 55 · 역방향 49 · 화면 19 · 로그인 12)
 vercel.json         배포 설정 (함수 실행 시간)
 docs/               PLAN · CHANGELOG · WORKLOG · 테마 스니펫
 ```

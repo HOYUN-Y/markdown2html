@@ -98,6 +98,25 @@ a.tool-tab:hover { color: var(--accent); background: var(--accent-soft); }
   background: var(--line); color: var(--text-muted);
 }
 
+/* 로그아웃 — 블로그 헤더의 .b-icon-btn과 같은 모양 */
+.tool-logout { margin-left: auto; display: flex; }
+.b-icon-btn {
+  display: grid; place-items: center; width: 30px; height: 30px;
+  border: 1px solid var(--line-strong); border-radius: var(--radius);
+  background: none; color: var(--text-muted); cursor: pointer;
+  transition: color var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+}
+.b-icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ══ 로그인 화면 ══════════════════════════════════════════ */
+.login-wrap { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+.login-card {
+  width: 100%; max-width: 380px; padding: 28px 26px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.login-brand { justify-content: center; margin-bottom: 2px; }
+.login-submit { width: 100%; }
+
 /* ══ 상단 바 — blog write.html .ed-top ════════════════════ */
 .ed-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 /* 브랜드 — 블로그 헤더(blog.css .b-brand)와 같은 조판.

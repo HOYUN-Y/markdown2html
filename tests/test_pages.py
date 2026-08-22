@@ -11,6 +11,7 @@ import re
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -20,6 +21,24 @@ import tools  # noqa: E402
 from app import app  # noqa: E402
 from converter import theme  # noqa: E402
 from converter.snippet import MERMAID_SRC, MERMAID_THEME, THEME_SNIPPET  # noqa: E402
+
+
+#: 이 파일은 화면이 **열리는지**를 본다. 로그인은 `test_auth.py`가 따로 본다.
+#:
+#: 개발자가 로컬에 `TOOLS_PASSWORD_HASH`를 설정해 두면 여기 있는 모든 요청이
+#: 로그인으로 튕겨 테스트가 무더기로 깨진다 — 코드가 아니라 **환경 때문에** 깨지는
+#: 것이라 원인을 찾기 어렵다. 이 파일이 도는 동안에는 로그인을 꺼 둔다.
+_env = None
+
+
+def setUpModule():
+    global _env
+    _env = mock.patch.dict("os.environ", {"TOOLS_PASSWORD_HASH": ""}, clear=False)
+    _env.start()
+
+
+def tearDownModule():
+    _env.stop()
 
 
 class RouteTest(unittest.TestCase):
