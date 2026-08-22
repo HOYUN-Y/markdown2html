@@ -3,3 +3,12 @@ __pycache__/
 *.py[cod]
 .DS_Store
 .pytest_cache/
+
+# 비밀값 — 로그인 해시·SECRET_KEY·DB 연결 문자열이 들어갈 자리.
+# `vercel env pull`이 만드는 .env.local도 여기 걸린다.
+.env
+.env.*
+!.env.example
+
+# vercel CLI가 만드는 프로젝트 연결 정보
+.vercel/
