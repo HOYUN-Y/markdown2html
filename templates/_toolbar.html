@@ -18,4 +18,16 @@
       {% endif %}
     {% endfor %}
   </div>
+  {% if auth_on and logged_in %}
+    {# 로그아웃 — 블로그 헤더(.b-logout)와 같은 자리·같은 모양 #}
+    <form class="tool-logout" method="post" action="{{ url_for('logout') }}">
+      <button type="submit" class="b-icon-btn" aria-label="로그아웃" title="로그아웃">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4M14 17l5-5-5-5M19 12H9"
+                stroke="currentColor" stroke-width="1.7"
+                stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
+    </form>
+  {% endif %}
 </nav>

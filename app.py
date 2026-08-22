@@ -6,8 +6,9 @@ Flask는 이 파일에만 있다. 변환 로직은 `converter/` 패키지에 있
     python app.py   →  http://127.0.0.1:5001
 """
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
+import auth
 import diagrams
 import drawio
 from converter import convert
@@ -21,6 +22,24 @@ from tools import nav
 # 템플릿의 url_for('static', …)를 그대로 쓸 수 있고 두 환경이 갈라지지 않는다.
 app = Flask(__name__, static_folder="public", static_url_path="")
 
+# 로그인. 화면마다 데코레이터를 붙이지 않고 **모든 요청 앞에** 세운다 —
+# 도구를 새로 만들 때 빠뜨리면 그 화면만 공개되기 때문이다(auth.guard 주석 참고).
+app.secret_key = auth.secret_key()
+app.permanent_session_lifetime = auth.SESSION_LIFETIME
+app.before_request(auth.guard)
+
+# 쿠키를 조인다. Secure는 **배포본에서만** 켠다 — 로컬은 http라 켜면 브라우저가
+# 쿠키를 아예 안 보내서 로그인이 안 된다(원인이 화면에 안 나와 한참 헤맨다).
+app.config["SESSION_COOKIE_SECURE"] = auth.is_hosted()
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+
+
+@app.context_processor
+def auth_state():
+    """템플릿이 로그아웃 버튼을 보일지 정하는 데 쓴다."""
+    return {"auth_on": auth.is_enabled(), "logged_in": auth.is_logged_in()}
+
 #: 붙여넣기 사고로 브라우저가 멈추는 걸 막는 상한.
 #:
 #: 글자 수로 세지만 **바이트로도 안전해야 한다** — Vercel 함수의 요청 본문 한도가
@@ -28,6 +47,35 @@ app = Flask(__name__, static_folder="public", static_url_path="")
 #: (예전 200만 자는 한글로 6MB라 Vercel이 413으로 막았을 것이다.)
 #: 실측: 50만 자 변환에 정방향 1초·역방향 3초 — 기본 타임아웃 안에 들어온다.
 MAX_INPUT = 500_000
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """비밀번호 하나로 들어온다. 쓰는 사람이 한 명이라 계정 테이블이 없다."""
+    if not auth.is_enabled():
+        return redirect(url_for("index"))
+    if auth.is_logged_in():
+        return redirect(url_for("index"))
+
+    error = ""
+    if request.method == "POST":
+        if auth.check(request.form.get("password") or ""):
+            auth.log_in()
+            # 로그인 전에 열려던 화면으로 돌려보낸다. **바깥 주소로는 보내지 않는다** —
+            # 열린 리다이렉트가 되면 이 화면이 피싱 발판이 된다.
+            target = request.form.get("next") or ""
+            return redirect(target if target.startswith("/") and not target.startswith("//")
+                            else url_for("index"))
+        error = "비밀번호가 맞지 않습니다."
+
+    return render_template("login.html", error=error,
+                           next=request.args.get("next", "")), (401 if error else 200)
+
+
+@app.post("/logout")
+def logout():
+    auth.log_out()
+    return redirect(url_for("login"))
 
 
 @app.get("/")
