@@ -1,8 +1,13 @@
-{# 푸터 — 도구가 늘어나면 각 화면에서 {% include %} 한 줄로 쓴다. #}
+{# 푸터 — 도구가 늘어나면 각 화면에서 {% include %} 한 줄로 쓴다.
+   짜임새는 블로그 푸터(blog/base.html의 .b-footer)를 따랐다. 그쪽도 작은 워드마크 +
+   저작권 한 줄 + 오른쪽 링크이고, 접미사(.blog)는 푸터에서 빼고 쓴다. #}
 <footer class="site-foot">
-  <span class="b-mono foot-mark">BLOG TOOLS</span>
+  <div class="foot-brand">
+    {% with logo_class = 'b-logo-sm' %}{% include "_wordmark.html" %}{% endwith %}
+    <span class="b-mono foot-mark">© 2026 RYU HOYUN · 글쓰기 도구</span>
+  </div>
   <div class="foot-links">
     <a href="https://blog.devprofessional.xyz" target="_blank" rel="noopener">블로그</a>
-    <a href="https://github.com/HOYUN-Y" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/HOYUN-Y" target="_blank" rel="noopener">GitHub ↗</a>
   </div>
 </footer>
