@@ -100,13 +100,22 @@ a.tool-tab:hover { color: var(--accent); background: var(--accent-soft); }
 
 /* ══ 상단 바 — blog write.html .ed-top ════════════════════ */
 .ed-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.brand {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--font-mono); font-size: 11px; font-weight: 700;
-  letter-spacing: .12em; color: var(--accent);
-  padding: 6px 10px; border: 1px solid var(--accent-soft);
-  background: var(--accent-soft); border-radius: var(--radius);
+/* 브랜드 — 블로그 헤더(blog.css .b-brand)와 같은 조판.
+   워드마크는 _toolbar.html에 인라인 SVG로 들어 있고 fill이 currentColor라
+   여기서 정한 색을 따른다. 블로그가 로고 파일을 라이트·다크 두 벌 둔 이유가
+   <img>는 색을 물려받지 못해서인데, 인라인이면 그 문제가 없다. */
+.b-brand {
+  display: flex; align-items: center; gap: 7px;
+  color: var(--accent); text-decoration: none;
 }
+.b-logo { height: 18px; width: auto; display: block; }
+.b-suffix { font-family: var(--font-mono); font-size: 14px; font-weight: 700; }
+
+/* 로고 끝의 커서. 블로그 로고 SVG가 들고 있던 애니메이션을 그대로 옮겼다 —
+   인라인 SVG 안의 <style>은 문서 전체에 걸리므로 스타일시트에 둔다. */
+@keyframes hyCaretBlink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+.hy-caret { animation: hyCaretBlink 1.1s infinite; }
+@media (prefers-reduced-motion: reduce) { .hy-caret { animation: none; } }
 .ed-heading {
   font-family: var(--font-display); font-size: 19px; font-weight: 700;
   color: var(--heading);
@@ -337,4 +346,21 @@ dialog::backdrop { background: rgba(13, 18, 32, .45); }
 @media (max-width: 1080px) {
   /* .grid의 1열 규칙보다 .grid-2가 뒤에 있어 그냥 두면 이겨버린다 */
   .grid-2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ══ draw.io 편집기 (/drawio) ═════════════════════════════ */
+/* 판이 하나뿐이다 — 편집기가 폭을 다 쓴다. .grid의 3열 규칙보다 뒤에 두어 이긴다. */
+.grid-1 { grid-template-columns: minmax(0, 1fr); }
+
+/* iframe은 부모 높이 체인이 한 군데라도 끊기면 0px가 되어 **빈 화면처럼 보인다.**
+   flex로 늘리되 최소 높이를 실제 값으로 못 박아 그 사고를 막는다. */
+.grid-1 .pane { min-height: min(74vh, 920px); }
+.dio-frame {
+  flex: 1; min-height: 0; width: 100%; border: 0;
+  background: var(--bg-elev);
+}
+
+@media (max-width: 1080px) {
+  .grid-1 { grid-template-columns: minmax(0, 1fr); }
+  .grid-1 .pane { min-height: 70vh; }
 }

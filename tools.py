@@ -31,10 +31,10 @@ TOOLS = [
     },
     {
         "slug": "drawio",
-        "name": "draw.io 임베드",
-        "summary": "draw.io 그림을 글에 넣을 수 있는 형태로 만든다.",
-        "url": "",
-        "ready": False,
+        "name": "draw.io 다이어그램",
+        "summary": "끌어다 놓아 그리고, 글에 넣을 형태로 가져간다.",
+        "url": "/drawio",
+        "ready": True,
     },
 ]
 

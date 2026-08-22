@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>draw.io 다이어그램</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}" />
+</head>
+{# 임베드 주소·출처·인라인 상한은 drawio.py가 유일한 출처다. JS가 origin 대조에
+   같은 값을 쓰므로 두 군데로 갈라지면 조용히 메시지를 버리게 된다. #}
+<body data-embed-origin="{{ embed_origin }}" data-max-inline="{{ max_inline_chars }}"
+      data-wrap-style="{{ wrap_style }}">
+<div class="wrap">
+
+  {% include "_toolbar.html" %}
+
+  <header class="ed-top">
+    <span class="ed-heading">끌어다 놓아 그리고, 글로 가져가기</span>
+    <div class="ed-top-actions">
+      <button type="button" class="b-btn b-btn-line" id="openBtn">불러오기</button>
+      <button type="button" class="b-btn b-btn-line" id="xmlBtn">.drawio 저장</button>
+      <button type="button" class="b-btn b-btn-line" id="pngBtn">PNG 저장</button>
+      <button type="button" class="b-btn b-btn-line" id="svgBtn">SVG 저장</button>
+      <button type="button" class="b-btn b-btn-accent" id="copyBtn">인라인 조각 복사</button>
+    </div>
+  </header>
+
+  <section class="ed-card opts">
+    <p class="ed-note note-inline">
+      <strong>SVG 저장</strong>은 그림 안에 원본을 넣어 두므로, 그 파일을 다시
+      <strong>불러오기</strong>하면 이어서 편집됩니다.
+      <strong>인라인 조각</strong>은 이미지를 어디에도 올리지 않고 Blogger의
+      <code>HTML 보기</code>에 바로 붙여넣는 용도입니다.
+      그린 내용은 서버로 가지 않고 브라우저에만 남습니다.
+    </p>
+  </section>
+
+  <div class="banners" id="banners"></div>
+
+  <div class="grid grid-1">
+    <section class="ed-card pane">
+      <div class="pane-head">
+        <span class="b-mono">DRAW.IO</span>
+        <div class="right"><span class="b-mono muted" id="stat"></span></div>
+      </div>
+      {# sandbox를 걸지 않는다. draw.io는 스토리지·팝업·다운로드를 쓰는 완전한 앱이라
+         잘못 조이면 기능이 조용히 빠진다. 교차 출처라 우리 페이지는 못 읽고,
+         들어오는 메시지는 JS가 origin으로 거른다. #}
+      <iframe id="editor" class="dio-frame" title="draw.io 편집기"
+              referrerpolicy="no-referrer" allow="clipboard-write"
+              src="{{ embed_url }}"></iframe>
+    </section>
+  </div>
+
+  {% include "_footer.html" %}
+</div>
+
+{# 불러오기 — .drawio/.xml/편집 가능한 .svg 를 모두 받는다 #}
+<input type="file" id="fileInput" class="hidden" accept=".drawio,.xml,.svg,image/svg+xml" />
+
+<script type="module" src="{{ url_for('static', filename='js/drawio.js') }}"></script>
+</body>
+</html>

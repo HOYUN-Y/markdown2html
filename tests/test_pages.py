@@ -7,6 +7,7 @@
     .venv/bin/python -m unittest discover -s tests -v
 """
 
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -14,8 +15,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import diagrams  # noqa: E402
+import drawio  # noqa: E402
 import tools  # noqa: E402
 from app import app  # noqa: E402
+from converter import theme  # noqa: E402
 from converter.snippet import MERMAID_SRC, MERMAID_THEME, THEME_SNIPPET  # noqa: E402
 
 
@@ -44,6 +47,21 @@ class RouteTest(unittest.TestCase):
         self.assertIn(">Mermaid 다이어그램</span>", page)          # 현재 탭
         self.assertNotIn("Mermaid 다이어그램<em", page)            # '준비 중' 배지
         self.assertIn('aria-current="page"', page)
+
+    def test_drawio_page_opens(self):
+        self.assertEqual(self.client.get("/drawio").status_code, 200)
+
+    def test_drawio_tab_is_current_not_soon(self):
+        page = self.client.get("/drawio").get_data(as_text=True)
+        self.assertIn(">draw.io 다이어그램</span>", page)
+        self.assertNotIn("draw.io 다이어그램<em", page)
+
+    def test_drawio_page_carries_embed_url_and_origin(self):
+        """편집기 주소와 origin이 함께 나가야 JS가 메시지를 받아들인다."""
+        page = self.client.get("/drawio").get_data(as_text=True)
+        # 속성 안이라 `&`가 `&amp;`로 나간다 — 브라우저가 되돌려 읽는다.
+        self.assertIn(drawio.embed_url().replace("&", "&amp;"), page)
+        self.assertIn('data-embed-origin="%s"' % drawio.EMBED_ORIGIN, page)
 
     def test_page_carries_mermaid_source_and_templates(self):
         """편집기는 서버가 넘긴 CDN 주소·템플릿으로 그린다 — 둘 다 실려 나가야 한다."""
@@ -100,6 +118,53 @@ class SnippetSourceTest(unittest.TestCase):
     def test_theme_snippet_uses_the_same_constants(self):
         self.assertIn(MERMAID_SRC, THEME_SNIPPET)
         self.assertIn('theme: "%s"' % MERMAID_THEME, THEME_SNIPPET)
+
+
+class DrawioConfigTest(unittest.TestCase):
+    """임베드 설정이 어긋나면 **화면은 멀쩡한데 아무 반응이 없다.** 눈으로는 못 잡는다."""
+
+    def test_embed_url_matches_origin(self):
+        """주소와 origin이 갈라지면 JS가 모든 메시지를 조용히 버린다."""
+        self.assertTrue(drawio.EMBED_ORIGIN.startswith("https://"))
+        self.assertTrue(drawio.embed_url().startswith(drawio.EMBED_ORIGIN + "/"))
+
+    def test_required_params_present(self):
+        """둘 중 하나만 빠져도 init이 오지 않아 편집기가 영원히 준비되지 않는다."""
+        self.assertEqual(drawio.EMBED_PARAMS.get("embed"), "1")
+        self.assertEqual(drawio.EMBED_PARAMS.get("proto"), "json")
+
+    def test_dark_is_pinned_off(self):
+        """다크로 뜨면 내보낸 그림의 글자가 흰색이 되어 흰 배경에서 안 보인다."""
+        self.assertEqual(drawio.EMBED_PARAMS.get("dark"), "0")
+
+    def test_configure_is_not_enabled(self):
+        """켜면 편집기가 우리 응답을 기다리며 로딩에서 멈춘다."""
+        self.assertNotIn("configure", drawio.EMBED_PARAMS)
+
+    def test_wrap_style_follows_the_diagram_spacing(self):
+        """인라인 조각의 여백은 mermaid 다이어그램과 같아야 한다(한 글 안에서 섞인다)."""
+        self.assertIn(theme.MERMAID_STYLE, drawio.WRAP_STYLE)
+
+
+class ScriptWiringTest(unittest.TestCase):
+    """JS가 찾는 id가 화면에 없으면 그 버튼만 **조용히** 죽는다.
+
+    브라우저를 열지 않고 잡을 수 있는 몇 안 되는 화면 버그다.
+    """
+
+    ROOT = Path(__file__).resolve().parent.parent
+    PAGES = [("/mermaid", "public/js/diagram.js"), ("/drawio", "public/js/drawio.js")]
+
+    def test_every_id_the_script_looks_up_exists(self):
+        client = app.test_client()
+        for url, script in self.PAGES:
+            with self.subTest(page=url):
+                page = client.get(url).get_data(as_text=True)
+                source = (self.ROOT / script).read_text(encoding="utf-8")
+                wanted = set(re.findall(r'getElementById\("([^"]+)"\)', source))
+                wanted |= set(re.findall(r'querySelectorAll?\("#([A-Za-z0-9_-]+)', source))
+                present = set(re.findall(r'id="([^"]+)"', page))
+                self.assertEqual(wanted - present, set(), "화면에 없는 id를 찾고 있다")
 
 
 if __name__ == "__main__":

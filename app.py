@@ -9,6 +9,7 @@ Flask는 이 파일에만 있다. 변환 로직은 `converter/` 패키지에 있
 from flask import Flask, jsonify, render_template, request
 
 import diagrams
+import drawio
 from converter import convert
 from converter.snippet import MERMAID_SRC, MERMAID_THEME, THEME_SNIPPET
 from tools import nav
@@ -49,6 +50,24 @@ def mermaid():
         mermaid_src=MERMAID_SRC,
         mermaid_theme=MERMAID_THEME,
         **nav("mermaid"),
+    )
+
+
+@app.get("/drawio")
+def drawio_page():
+    """draw.io 편집기.
+
+    `/mermaid`와 같이 **API가 없다.** 편집기는 draw.io 공식 임베드(iframe)이고
+    그림은 브라우저 안에서만 오간다 — 서버는 화면과 임베드 주소만 준다.
+    함수 이름을 `drawio`로 하지 않은 것은 같은 이름의 모듈을 가리기 때문이다.
+    """
+    return render_template(
+        "drawio.html",
+        embed_url=drawio.embed_url(),
+        embed_origin=drawio.EMBED_ORIGIN,
+        max_inline_chars=drawio.MAX_INLINE_CHARS,
+        wrap_style=drawio.WRAP_STYLE,
+        **nav("drawio"),
     )
 
 

@@ -272,5 +272,64 @@ class StatsTest(unittest.TestCase):
         self.assertEqual(stats["tables"], 1)
 
 
+class InlineSvgTest(unittest.TestCase):
+    """그림(SVG)은 마크다운에 문법이 없다 — 지우지 말고 원본으로 남겨야 한다.
+
+    draw.io 도구가 인라인 조각을 내보내면서 실제로 밟게 된 길이다. 그전에는
+    본문에 SVG가 들어갈 일이 없어 이 구멍이 드러나지 않았다.
+    """
+
+    #: 도구가 내보내는 모양 그대로 — 그림을 `<div>`가 직접 감싼다.
+    FRAGMENT = (
+        '<div style="margin:28px 0;text-align:center;">'
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20" '
+        'width="40" height="20" id="dio-a"><text x="1" y="5">라벨</text></svg>'
+        "</div>"
+    )
+
+    def test_svg_survives_instead_of_being_flattened(self):
+        result = to_markdown("<p>앞</p>" + self.FRAGMENT + "<p>뒤</p>")
+        self.assertIn("<svg", result.markdown)
+        self.assertIn("<text", result.markdown)
+        # 감싸개도 style째 남아야 왕복이 닫힌다 — 그 style이 그림의 여백을 들고 있다.
+        self.assertIn('<div style=', result.markdown)
+
+    def test_geometry_and_ids_are_not_stripped(self):
+        """svg의 width·height·id는 껍데기가 아니라 그림 그 자체다."""
+        markdown = to_markdown(self.FRAGMENT).markdown
+        for kept in ('width="40"', 'height="20"', 'id="dio-a"', "xmlns="):
+            self.assertIn(kept, markdown)
+
+    def test_warns_and_counts(self):
+        result = to_markdown(self.FRAGMENT)
+        self.assertGreaterEqual(result.stats["raw_html_kept"], 1)
+        self.assertTrue(any("HTML 그대로" in w for w in result.warnings))
+
+    def test_stays_stable_across_a_second_conversion(self):
+        """다시 변환해도 같은 HTML이 나오는가.
+
+        감싸개를 벗기면 `<svg>`가 `<p>`에 감싸이고 그 안의 글자에 마크다운 인라인
+        문법이 먹어, `<text>*별*</text>`가 `<em>`이 된다.
+        """
+        source = "앞\n\n" + self.FRAGMENT.replace("라벨", "라벨 *별*") + "\n\n뒤"
+        first = convert(source).html
+        self.assertIn("<svg", first)
+        # 그림 안의 `*별*`이 <em>이 되지 않았다 — 감싸개가 한 일이다.
+        self.assertNotIn("<em", first)
+
+        # 한 번 되돌린 뒤부터는 표기가 고정된다. 첫 결과와 글자까지 같기를 요구하지
+        # 않는 것은, bs4가 속성 순서를 정리해 표기만 달라지기 때문이다 —
+        # 이 저장소가 왕복을 판정해 온 기준(렌더가 같으면 정보가 새지 않았다)과 같다.
+        second = convert(to_markdown(first).markdown).html
+        third = convert(to_markdown(second).markdown).html
+        self.assertEqual(second, third)
+
+    def test_ordinary_tags_still_lose_their_styling(self):
+        """가드가 너무 넓게 걸리면 청소 본래의 일이 죽는다 — svg 밖은 그대로여야 한다."""
+        markdown = to_markdown('<p style="color:red" id="x">글</p>').markdown
+        self.assertNotIn("style", markdown)
+        self.assertNotIn('id="x"', markdown)
+
+
 if __name__ == "__main__":
     unittest.main()
