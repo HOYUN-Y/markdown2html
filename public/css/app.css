@@ -338,3 +338,20 @@ dialog::backdrop { background: rgba(13, 18, 32, .45); }
   /* .grid의 1열 규칙보다 .grid-2가 뒤에 있어 그냥 두면 이겨버린다 */
   .grid-2 { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ══ draw.io 편집기 (/drawio) ═════════════════════════════ */
+/* 판이 하나뿐이다 — 편집기가 폭을 다 쓴다. .grid의 3열 규칙보다 뒤에 두어 이긴다. */
+.grid-1 { grid-template-columns: minmax(0, 1fr); }
+
+/* iframe은 부모 높이 체인이 한 군데라도 끊기면 0px가 되어 **빈 화면처럼 보인다.**
+   flex로 늘리되 최소 높이를 실제 값으로 못 박아 그 사고를 막는다. */
+.grid-1 .pane { min-height: min(74vh, 920px); }
+.dio-frame {
+  flex: 1; min-height: 0; width: 100%; border: 0;
+  background: var(--bg-elev);
+}
+
+@media (max-width: 1080px) {
+  .grid-1 { grid-template-columns: minmax(0, 1fr); }
+  .grid-1 .pane { min-height: 70vh; }
+}
