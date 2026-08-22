@@ -376,6 +376,8 @@ result.stats     # 글자수·코드블록·이미지·다이어그램·남은 �
 | 다크 모드 색 | `blog.css` (`html[data-theme="dark"] body.blog`) | `converter/theme.py`의 `DARK` |
 | 코드 색 | highlight.js `github-dark-dimmed` (`blog.css:435`) | `converter/highlight.py` |
 | KaTeX·Mermaid 설정 | `templates/blog/detail.html` | `converter/snippet.py` |
+| 워드마크 `def hy()` | `static/img/logo-blog.svg` | `templates/_wordmark.html` (패스를 옮겨 둠) |
+| 헤더·푸터 조판 | `blog.css` (`.b-brand`·`.b-footer`) | `public/css/app.css` |
 
 > 본문 스타일은 `main.css`의 `.prose`가 **아니다.** 그건 포트폴리오 사이트용
 > 오렌지 테마이고, 블로그 서브도메인은 `blog.css`의 'Slate & Navy'(강조색 남색)를 쓴다.
