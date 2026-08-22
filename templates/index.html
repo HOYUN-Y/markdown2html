@@ -19,6 +19,12 @@
     </div>
   </header>
 
+  {% if db_on %}
+    {# 저장·불러오기 막대는 docs.js가 그린다. DB가 없으면 자리 자체를 두지 않는다 —
+       눌러도 아무 일이 없는 버튼을 두느니 없는 편이 낫다. #}
+    <div id="docsMount"></div>
+  {% endif %}
+
   <section class="ed-card opts">
     <div class="field">
       <label class="ed-label" for="baseUrl" id="baseUrlLabel">이미지 기준 URL</label>
@@ -118,5 +124,23 @@
 </dialog>
 
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% if db_on %}
+  {# app.js는 모듈이 아니라(가장 오래된 화면이고 아직 사람이 눌러 확인하지 않았다)
+     여기서 얇게 붙인다. 저장할 것은 **마크다운 원문**이다 — 변환 결과는 언제든 다시
+     만들 수 있고, 넣어 두면 원문을 고쳤을 때 조용히 어긋난다. #}
+  <script type="module">
+    import { mountDocs } from "{{ url_for('static', filename='js/docs.js') }}";
+    var src = document.getElementById("src");
+    mountDocs({
+      tool: "convert",
+      getContent: function () { return src.value; },
+      setContent: function (text) {
+        src.value = text;
+        // app.js가 input을 듣고 있다. 이벤트를 흘려야 미리보기가 따라온다.
+        src.dispatchEvent(new Event("input"));
+      }
+    });
+  </script>
+{% endif %}
 </body>
 </html>

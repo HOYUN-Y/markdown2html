@@ -9,6 +9,7 @@ Flask는 이 파일에만 있다. 변환 로직은 `converter/` 패키지에 있
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 import auth
+import db
 import diagrams
 import drawio
 from converter import convert
@@ -38,7 +39,13 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 @app.context_processor
 def auth_state():
     """템플릿이 로그아웃 버튼을 보일지 정하는 데 쓴다."""
-    return {"auth_on": auth.is_enabled(), "logged_in": auth.is_logged_in()}
+    return {
+        "auth_on": auth.is_enabled(),
+        "logged_in": auth.is_logged_in(),
+        # 화면이 저장 UI를 그릴지 정한다. DB가 없으면(로컬 등) 아예 안 그린다 —
+        # 눌러도 아무 일이 없는 버튼을 두느니 없는 편이 낫다.
+        "db_on": db.is_configured(),
+    }
 
 #: 붙여넣기 사고로 브라우저가 멈추는 걸 막는 상한.
 #:
@@ -173,6 +180,98 @@ def api_to_markdown():
         notes=result.notes,
         stats=result.stats,
     )
+
+
+# ── 문서 저장 ────────────────────────────────────────────────────
+#
+# 세 도구가 같은 API를 쓴다. 저장하는 것이 결국 '제목 붙은 원본 한 덩어리'로 같은
+# 모양이라 도구마다 API를 따로 둘 이유가 없다. 로그인은 `auth.guard`가 이미 앞에서
+# 막고 있으므로 여기서 다시 확인하지 않는다.
+
+
+def _doc_error(exc: Exception):
+    app.logger.exception("문서 저장/조회 실패")
+    return jsonify(error=f"저장소에 접근하지 못했습니다: {exc}"), 502
+
+
+def _require_db():
+    if not db.is_configured():
+        return jsonify(error="저장소가 연결되어 있지 않습니다 (DATABASE_URL)."), 503
+    return None
+
+
+@app.get("/api/docs")
+def api_docs_list():
+    blocked = _require_db()
+    if blocked:
+        return blocked
+    tool = request.args.get("tool") or ""
+    if tool not in db.TOOLS:
+        return jsonify(error="알 수 없는 도구입니다."), 400
+    try:
+        return jsonify(docs=db.listing(tool))
+    except Exception as exc:
+        return _doc_error(exc)
+
+
+@app.post("/api/docs")
+def api_docs_save():
+    blocked = _require_db()
+    if blocked:
+        return blocked
+
+    payload = request.get_json(silent=True) or {}
+    tool = payload.get("tool") or ""
+    if tool not in db.TOOLS:
+        return jsonify(error="알 수 없는 도구입니다."), 400
+
+    content = payload.get("content") or ""
+    if not content.strip():
+        return jsonify(error="저장할 내용이 없습니다."), 400
+    if len(content) > db.MAX_CONTENT:
+        return jsonify(error=f"내용이 너무 깁니다 ({len(content):,}자)."), 413
+
+    # 제목을 비워 두고 저장하는 일이 잦다. 막지 말고 채워 준다 —
+    # 목록에서 '무제'가 여러 개면 날짜로 구분한다.
+    title = (payload.get("title") or "").strip()[: db.MAX_TITLE] or "제목 없음"
+
+    doc_id = payload.get("id")
+    try:
+        doc_id = int(doc_id) if doc_id else None
+    except (TypeError, ValueError):
+        doc_id = None
+
+    try:
+        return jsonify(doc=db.save(tool, title, content, doc_id))
+    except Exception as exc:
+        return _doc_error(exc)
+
+
+@app.get("/api/docs/<int:doc_id>")
+def api_docs_get(doc_id: int):
+    blocked = _require_db()
+    if blocked:
+        return blocked
+    try:
+        doc = db.get(doc_id)
+    except Exception as exc:
+        return _doc_error(exc)
+    if not doc:
+        return jsonify(error="문서를 찾지 못했습니다."), 404
+    return jsonify(doc=doc)
+
+
+@app.delete("/api/docs/<int:doc_id>")
+def api_docs_delete(doc_id: int):
+    blocked = _require_db()
+    if blocked:
+        return blocked
+    try:
+        if not db.delete(doc_id):
+            return jsonify(error="문서를 찾지 못했습니다."), 404
+    except Exception as exc:
+        return _doc_error(exc)
+    return jsonify(ok=True)
 
 
 if __name__ == "__main__":

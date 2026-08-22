@@ -8,6 +8,8 @@
  * ES 모듈이라 파일 전체가 이미 자기 스코프다 — app.js의 IIFE 껍데기가 없다.
  */
 
+import { mountDocs } from "./docs.js";
+
 var body = document.body;
 var src = document.getElementById("src");
 var stage = document.getElementById("stage");
@@ -381,3 +383,15 @@ pngBtn.addEventListener("click", savePng);
 load();
 schedule();
 render();
+
+// 서버 저장. 저장하는 것은 **소스 텍스트**다 — SVG·PNG는 여기서 다시 만들 수 있다.
+mountDocs({
+  tool: "mermaid",
+  getContent: function () { return src.value; },
+  setContent: function (text) {
+    src.value = text;
+    undoSource = null;
+    schedule();
+    render();
+  }
+});

@@ -17,3 +17,9 @@ Flask>=3.0
 # converter/__init__.py에서 import하지 않으므로, 정방향만 쓰는 곳
 # (블로그가 converter/를 복사해 간다)에는 없어도 된다.
 beautifulsoup4>=4.12
+
+# 서버 저장(도구별 문서) 전용 — Neon Postgres.
+# Vercel 함수는 디스크가 없어 SQLite를 쓸 수 없다(요청마다 다른 인스턴스일 수 있고
+# 파일시스템도 사라진다). converter/ 패키지는 이 의존성을 import하지 않는다 —
+# 블로그가 그 폴더를 복사해 가는데 저장 기능은 이 사이트에만 있다.
+psycopg[binary]>=3.1
