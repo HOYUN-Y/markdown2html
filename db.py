@@ -63,7 +63,12 @@ def _connect():
         raise NotConfigured("DATABASE_URL이 설정되어 있지 않습니다.")
     import psycopg  # 이 경로에서만 필요하다. 없는 환경에서 화면까지 죽이지 않는다.
 
-    with psycopg.connect(url(), connect_timeout=10) as conn:
+    # prepare_threshold=None — **준비된 구문(prepared statement)을 쓰지 않는다.**
+    # Neon이 주는 DATABASE_URL은 PgBouncer를 거치는 풀링 주소이고, 트랜잭션 풀링에서는
+    # 서버 쪽 준비된 구문이 다음 요청과 엉켜 `prepared statement "_pg3_0" already exists`가
+    # 난다. 요청마다 연결을 새로 여는 지금 구조에서는 실제로 걸릴 일이 드물지만,
+    # 걸리면 원인을 찾기가 매우 어려운 종류라 아예 꺼 둔다.
+    with psycopg.connect(url(), connect_timeout=10, prepare_threshold=None) as conn:
         yield conn
 
 
