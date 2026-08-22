@@ -93,8 +93,8 @@ def to_markdown(html: str, *, base_url: str = "") -> MarkdownResult:
     if ctx.raw_html_kept:
         warnings.append(
             f"마크다운으로 옮길 수 없는 요소 {ctx.raw_html_kept}개는 HTML 그대로 두었습니다"
-            "(셀을 병합한 표·중첩 표 등). 마크다운은 원시 HTML을 허용하므로 그대로 두면 "
-            "동작하지만, 다른 편집기에서는 손봐야 할 수 있습니다."
+            "(셀을 병합한 표·중첩 표·그림(SVG) 등). 마크다운은 원시 HTML을 허용하므로 그대로 "
+            "두면 동작하지만, 다른 편집기에서는 손봐야 할 수 있습니다."
         )
     stats = {
         "characters": len(text),
@@ -130,16 +130,21 @@ def _clean(soup: BeautifulSoup) -> None:
     for node in soup.find_all(string=lambda s: isinstance(s, Comment)):
         node.extract()
     for tag in soup.find_all(list(_DROP)):
+        # svg 안의 <style>은 그림의 일부다. 지우면 색과 선이 사라진다.
+        if _in_svg(tag):
+            continue
         tag.decompose()
 
     # b/i/strike는 의미 태그로 통일한다. 뒤 렌더가 한 곳만 보게 하려는 것.
     for old, new in (("b", "strong"), ("i", "em"), ("strike", "del"), ("s", "del")):
         for tag in soup.find_all(old):
+            if _in_svg(tag):
+                continue
             tag.name = new
 
     for tag in soup.find_all(list(_UNWRAP)):
         # 우리 마커는 클래스로 알아보므로 벗기면 안 된다.
-        if _has_class(tag, "arithmatex", "mermaid"):
+        if _has_class(tag, "arithmatex", "mermaid") or _in_svg(tag):
             continue
         tag.unwrap()
 
@@ -148,6 +153,14 @@ def _clean(soup: BeautifulSoup) -> None:
     for tag in soup.find_all("div"):
         if _has_class(tag, "arithmatex", "mermaid"):
             continue
+        # 그림을 **직접** 감싼 div는 감싸개째 남긴다. 벗기면 다시 변환할 때 <svg>가
+        # <p>에 감싸이고, 그 안의 글자에 마크다운 인라인 문법이 먹어 <text>*x*</text>가
+        # <em>이 된다. 감싸개가 있어야 왕복이 닫힌다.
+        #
+        # 직계 자식만 보는 것이 중요하다 — 글 전체를 감싼 컨테이너 div도 그림을
+        # '품고' 있어서, 깊이를 안 따지면 본문 전체가 통째로 보존돼 버린다.
+        if _wraps_svg(tag):
+            continue
         if tag.find(list(_BLOCKS)):
             tag.unwrap()
         else:
@@ -155,12 +168,33 @@ def _clean(soup: BeautifulSoup) -> None:
 
     # 남은 스타일 흔적. 우리가 읽는 것(class)만 남기고 전부 버린다.
     for tag in soup.find_all(True):
+        # **svg 안은 건드리지 않는다.** viewBox·width·height·id·fill은 껍데기가 아니라
+        # 그림 그 자체다. 지우면 0×0이 되거나 화살표·그라디언트 참조가 끊긴다.
+        #
+        # 그림을 직접 감싼 div도 그대로 둔다 — 그 style이 그림의 여백과 가운데 정렬을
+        # 들고 있고, 어차피 통째로 원본으로 내보낼 것이라 여기서 지우면 왕복에서
+        # 첫 번째와 두 번째 결과가 달라진다.
+        if _in_svg(tag) or _wraps_svg(tag):
+            continue
         for attr in ("style", "id", "width", "height", "align", "bgcolor",
                      "color", "face", "size", "border", "cellpadding", "cellspacing"):
             tag.attrs.pop(attr, None)
         for attr in list(tag.attrs):
             if attr.startswith("data-") or attr.startswith("on"):
                 del tag.attrs[attr]
+
+
+def _in_svg(tag: Tag) -> bool:
+    """이 태그가 그림(svg) 안에 있거나 svg 자신인가.
+
+    청소 규칙은 전부 **본문 HTML**을 겨냥한 것이라 그림에 적용하면 그림이 망가진다.
+    """
+    return tag.name == "svg" or tag.find_parent("svg") is not None
+
+
+def _wraps_svg(tag: Tag) -> bool:
+    """이 태그가 그림을 **직접** 감싸고 있는가(직계 자식에 svg가 있는가)."""
+    return tag.find("svg", recursive=False) is not None
 
 
 def _has_class(tag: Tag, *names: str) -> bool:
@@ -229,6 +263,12 @@ def _block(tag: Tag, ctx: _Ctx) -> str:
     if name in ("dl", "dt", "dd"):
         # 마크다운 표준에 정의 목록이 없다. 굵은 항목 + 들여쓴 설명으로 근사한다.
         return _join(_blocks(tag, ctx))
+
+    if tag.name == "svg" or _wraps_svg(tag):
+        # 마크다운에 그림 문법이 없다. 평평하게 만들면 그림이 통째로 사라지므로
+        # 원본을 그대로 두고 경고한다 — 셀 병합 표를 다룰 때와 같은 원칙이다.
+        ctx.raw_html_kept += 1
+        return _raw(tag)
 
     if _has_class(tag, "mermaid"):
         ctx.code_blocks += 1
@@ -398,7 +438,7 @@ def _inline(node, ctx: _Ctx) -> str:
         mark = {"strong": "**", "em": "*", "del": "~~"}[name]
         return f"{mark}{inner}{mark}"
 
-    if name in ("sub", "sup", "kbd", "abbr", "iframe", "video", "audio"):
+    if name in ("sub", "sup", "kbd", "abbr", "iframe", "video", "audio", "svg"):
         # 마크다운에 문법이 없다. 원본을 남긴다 — 지우면 내용이 사라진다.
         ctx.raw_html_kept += 1
         return _raw(node)
