@@ -11,6 +11,7 @@
  */
 
 import { download, flash, setBanners } from "./shared.js";
+import { mountDocs } from "./docs.js";
 
 var body = document.body;
 var editor = document.getElementById("editor");
@@ -395,3 +396,15 @@ svgBtn.addEventListener("click", saveSvg);
 pngBtn.addEventListener("click", savePng);
 xmlBtn.addEventListener("click", saveXml);
 copyBtn.addEventListener("click", copyInline);
+
+// 서버 저장. 저장하는 것은 **.drawio 원본 XML**이다 — 그림(SVG·PNG)은 이걸로 다시 만든다.
+mountDocs({
+  tool: "drawio",
+  getContent: function () { return lastXml; },
+  setContent: function (xml) {
+    undoXml = lastXml;
+    scheduleStore(xml);
+    // 편집기가 아직 안 떴으면 넣을 곳이 없다. init이 오면 저장해 둔 것을 싣는다.
+    if (ready) send({ action: "load", xml: xml, autosave: 1 });
+  }
+});
